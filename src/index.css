@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --color-plum: #782045;
+  --color-plum-dark: #581836;
+  --color-plum-fade: #f9f2f5;
+  --color-orange: #f26522;
+  --color-yellow: #ffc20e;
+  --color-green: #00875a;
+  --color-green-light: #36b37e;
+  --color-red: #de350b;
+  --color-red-light: #ff5630;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  }
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body.accessibility-monochrome {
+  filter: grayscale(100%);
+}
+
+body.high-contrast {
+  --color-plum: #4a0e28;
+  --color-plum-dark: #2d0818;
+  --color-plum-fade: #f2e6ed;
+  --color-orange: #d04000;
+  --color-yellow: #d9a000;
+  --color-green: #006644;
+  --color-red: #b30000;
+}
+
+body.high-contrast {
+  color: #000000 !important;
+}
+
+body.high-contrast.dark,
+.dark body.high-contrast {
+  color: #ffffff !important;
+  background-color: #0a0a0a !important;
+}
+
+body.high-contrast button,
+body.high-contrast input,
+body.high-contrast select,
+body.high-contrast a {
+  outline-color: #000000;
+}
+
+body.high-contrast .border-gray-100,
+body.high-contrast .border-gray-150,
+body.high-contrast .border-gray-200,
+body.high-contrast .border-gray-250,
+body.high-contrast .border-gray-300 {
+  border-color: #222222 !important;
+}
+
+body.high-contrast.dark .border-gray-700,
+body.high-contrast.dark .border-gray-800,
+.dark body.high-contrast .border-gray-700,
+.dark body.high-contrast .border-gray-800 {
+  border-color: #888888 !important;
+}
+
+body.high-contrast .text-gray-400,
+body.high-contrast .text-gray-500,
+body.high-contrast .text-gray-600 {
+  color: #111111 !important;
+}
+
+body.high-contrast.dark .text-gray-400,
+body.high-contrast.dark .text-gray-500,
+body.high-contrast.dark .text-gray-300,
+.dark body.high-contrast .text-gray-400,
+.dark body.high-contrast .text-gray-500,
+.dark body.high-contrast .text-gray-300 {
+  color: #f5f5f5 !important;
+}
