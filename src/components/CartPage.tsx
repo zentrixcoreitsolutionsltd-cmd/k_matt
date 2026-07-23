@@ -308,20 +308,33 @@ export default function CartPage({
 
       {/* If Cart Empty */}
       {cart.length === 0 && step !== 'confirmation' ? (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-12 text-center space-y-4 max-w-2xl mx-auto shadow-lg">
-          <div className="w-20 h-20 rounded-full bg-plum-fade dark:bg-gray-800 text-plum mx-auto flex items-center justify-center">
-            <ShoppingCart className="w-10 h-10" />
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8 sm:p-12 text-center space-y-6 max-w-2xl mx-auto shadow-xl">
+          <div className="relative inline-block">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-plum/20 to-pink-500/10 text-plum dark:text-pink-400 mx-auto flex items-center justify-center shadow-inner">
+              <ShoppingCart className="w-12 h-12" />
+            </div>
+            <div className="absolute -top-2 -right-2 bg-yellow text-plum font-black text-xs px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 animate-bounce">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Empty</span>
+            </div>
           </div>
-          <h2 className="text-xl font-black text-gray-800 dark:text-gray-200">Your basket is currently empty</h2>
-          <p className="text-xs text-gray-500 max-w-md mx-auto">
-            Explore our vast catalog of fresh groceries, food cupboard essentials, electronics, and household items.
-          </p>
-          <button 
-            onClick={onContinueShopping}
-            className="bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-8 py-3.5 rounded-xl transition-colors cursor-pointer uppercase tracking-wider shadow-md"
-          >
-            Explore Supermarket Store
-          </button>
+
+          <div className="space-y-2">
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Your basket is currently empty</h2>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+              Explore our vast supermarket catalog of fresh groceries, food cupboard essentials, electronics, and household items at everyday low prices.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button 
+              onClick={onBackToShop || onContinueShopping}
+              className="inline-flex items-center justify-center gap-2 bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-8 py-3.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-lg hover:shadow-xl active:scale-98"
+            >
+              <ArrowLeft className="w-4 h-4 text-yellow" />
+              <span>Back to Shopping</span>
+            </button>
+          </div>
         </div>
       ) : step === 'confirmation' && completedOrder ? (
         

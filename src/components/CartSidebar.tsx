@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, Truck } from 'lucide-react';
+import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, Truck, ArrowLeft, Sparkles } from 'lucide-react';
 import { CartItem, StoreSettings } from '../types';
 import { formatMoney } from '../data/catalog';
 
@@ -72,12 +72,30 @@ export default function CartSidebar({
         {/* Cart Items List */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-              <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center">
-                <ShoppingCart className="w-8 h-8" />
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-2xl bg-plum/10 dark:bg-plum/20 text-plum dark:text-pink-400 flex items-center justify-center shadow-inner">
+                  <ShoppingCart className="w-10 h-10" />
+                </div>
+                <div className="absolute -top-1.5 -right-1.5 bg-yellow text-plum p-1.5 rounded-full shadow-md animate-bounce">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </div>
               </div>
-              <h3 className="font-extrabold text-base text-gray-800 dark:text-gray-200">Your basket is empty</h3>
-              <p className="text-xs text-gray-500 max-w-xs">Looks like you haven't added any supermarket groceries or products yet.</p>
+
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-base text-gray-800 dark:text-gray-100">Your basket is empty</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-xs leading-relaxed">
+                  Looks like you haven't added any supermarket groceries or products yet. Discover everyday low prices today!
+                </p>
+              </div>
+
+              <button 
+                onClick={onClose}
+                className="mt-2 inline-flex items-center gap-2 bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-3 px-6 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-yellow" />
+                <span>Back to Shopping</span>
+              </button>
             </div>
           ) : (
             cart.map((item) => (
