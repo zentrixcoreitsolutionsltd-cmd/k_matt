@@ -156,11 +156,11 @@ export default function Header({
               {/* Mobile Hamburger Menu (hidden on desktop) */}
               <button 
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden text-white hover:text-gray-200 cursor-pointer p-1 shrink-0 transition-colors"
+                className="md:hidden bg-white text-plum hover:bg-yellow hover:text-plum cursor-pointer p-1.5 rounded-lg shrink-0 transition-colors shadow-sm flex items-center justify-center"
                 aria-label="Toggle Navigation Menu"
                 id="mobile-menu-trigger"
               >
-                <Menu className="w-6 h-6" />
+                <Menu className="w-5 h-5 text-plum" />
               </button>
 
               {/* Amazon-Style Logo with Curved Smile Underline */}
@@ -193,7 +193,7 @@ export default function Header({
             </div>
 
             {/* Mobile-Only Quick Access Actions */}
-            <div className="flex md:hidden items-center gap-1.5 sm:gap-3">
+            <div className="flex md:hidden items-center gap-1 sm:gap-2">
               {/* Theme Toggle (Mobile) */}
               <button 
                 onClick={onToggleTheme}
@@ -203,10 +203,27 @@ export default function Header({
                 {isDark ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-300" />}
               </button>
 
+              {/* Wishlist Widget (Mobile) */}
+              {currentView === 'shop' && (
+                <button 
+                  onClick={onToggleWishlist}
+                  className="p-1.5 rounded-sm hover:bg-white/10 text-white cursor-pointer relative shrink-0 transition-all"
+                  aria-label="Wishlist"
+                  title="Wishlist"
+                >
+                  <Heart className="w-5 h-5 text-white fill-white/20" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-plum text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-sm">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {/* Compact Account Link (Mobile) */}
               <button 
                 onClick={onToggleUserProfile}
-                className="flex flex-col items-center justify-center px-1.5 py-1 text-white hover:text-gray-200 cursor-pointer"
+                className="flex flex-col items-center justify-center px-1.5 py-1 text-white hover:text-gray-200 cursor-pointer shrink-0"
                 title="Account"
               >
                 <span className="text-[9px] text-gray-200 leading-none font-medium">Hello</span>
@@ -220,7 +237,7 @@ export default function Header({
                 aria-label="Shopping Cart"
               >
                 <div className="relative">
-                  <ShoppingCart className="w-6 h-6 text-white" />
+                  <ShoppingCart className="w-5.5 h-5.5 text-white" />
                   <span className="absolute -top-1 left-1/2 -translate-x-1/2 bg-white text-plum text-[10px] font-black rounded-full px-1 min-w-[16px] text-center leading-none py-0.5 shadow-sm">
                     {cartCount}
                   </span>
@@ -416,7 +433,7 @@ export default function Header({
               placeholder="Search Kipchimatt Supermarket..." 
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              className="flex-1 px-3.5 h-full outline-none text-sm text-gray-900 placeholder-gray-400 font-medium"
+              className="flex-1 px-3.5 h-full outline-none text-sm text-gray-900 placeholder-gray-400 font-medium min-w-0"
               aria-label="Search inputs"
             />
 
@@ -452,11 +469,11 @@ export default function Header({
             {/* Mega Menu Drawer Toggle */}
             <button 
               onClick={() => setMegaMenuOpen(true)}
-              className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer transition-all font-black uppercase tracking-wider py-1.5 px-2.5 rounded-sm border border-transparent hover:border-white"
+              className="flex items-center gap-1.5 bg-white text-plum hover:bg-yellow hover:text-plum cursor-pointer transition-all font-black uppercase tracking-wider py-1 px-2.5 rounded-md shadow-sm"
               id="mega-menu-trigger-all"
             >
-              <Menu className="w-4 h-4 stroke-[2.5]" />
-              <span>All</span>
+              <Menu className="w-4 h-4 stroke-[2.5] text-plum" />
+              <span className="text-plum">All</span>
             </button>
  
             {/* Direct Category Access Links */}

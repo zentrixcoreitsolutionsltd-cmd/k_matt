@@ -54,7 +54,14 @@ export default function CompareModal({
                     <div>
                       <span className="text-[10px] font-bold uppercase text-gray-400">{p.brand}</span>
                       <h4 className="font-bold text-gray-900 dark:text-white line-clamp-2">{p.name}</h4>
-                      <p className="text-sm font-black text-plum dark:text-pink-400 mt-1">{formatMoney(p.price)}</p>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-sm font-black text-plum dark:text-pink-400">{formatMoney(p.price)}</span>
+                        {p.originalPrice > p.price && (
+                          <span className="text-xs text-black dark:text-black line-through font-extrabold">
+                            {formatMoney(p.originalPrice)}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-1 text-gray-600 dark:text-gray-300 pt-2 border-t border-gray-200 dark:border-gray-700">

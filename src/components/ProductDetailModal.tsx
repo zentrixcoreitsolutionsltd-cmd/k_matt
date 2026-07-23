@@ -191,7 +191,7 @@ export default function ProductDetailModal({
                   {formatMoney(product.price)}
                 </span>
                 {product.originalPrice > product.price && (
-                  <span className="text-base text-gray-400 line-through font-semibold">
+                  <span className="text-base text-black dark:text-black line-through font-extrabold">
                     {formatMoney(product.originalPrice)}
                   </span>
                 )}

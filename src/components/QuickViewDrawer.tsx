@@ -154,7 +154,7 @@ export default function QuickViewDrawer({
                 {formatMoney(product.price)}
               </span>
               {product.originalPrice > product.price && (
-                <span className="text-sm text-gray-400 line-through font-semibold">
+                <span className="text-sm text-black dark:text-black line-through font-extrabold">
                   {formatMoney(product.originalPrice)}
                 </span>
               )}

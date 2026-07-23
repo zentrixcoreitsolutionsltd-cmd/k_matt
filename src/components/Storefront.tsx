@@ -386,7 +386,7 @@ export default function Storefront({
                   {formatMoney(p.price)}
                 </span>
                 {p.originalPrice > p.price && (
-                  <span className="text-[11px] text-gray-400 line-through font-semibold">
+                  <span className="text-[11px] text-black dark:text-black line-through font-extrabold">
                     {formatMoney(p.originalPrice)}
                   </span>
                 )}
@@ -397,14 +397,14 @@ export default function Storefront({
                 </span>
               )}
               
-              <label className="flex items-center gap-1.5 mt-2.5 cursor-pointer select-none text-[11px] font-bold text-gray-500 hover:text-plum dark:text-gray-400">
+              <label className="flex items-center gap-1.5 mt-2.5 cursor-pointer select-none text-[11px] font-bold text-black dark:text-black hover:text-plum">
                 <input 
                   type="checkbox"
                   checked={comparedProductIds.includes(p.id)}
                   onChange={(e) => { e.stopPropagation(); onToggleCompare(p); }}
                   className="rounded border-gray-350 dark:border-gray-700 text-plum focus:ring-plum w-3.5 h-3.5 cursor-pointer"
                 />
-                <span>Compare specs</span>
+                <span className="text-black dark:text-black font-extrabold">Compare specs</span>
               </label>
             </div>
           </div>
@@ -1083,11 +1083,11 @@ export default function Storefront({
             {/* Shop by Brand Sections */}
             <section className="py-6 border-t border-gray-150 mt-4" id="brands-section">
               <div className="mb-6">
-                <h2 className="text-base font-extrabold text-gray-800 flex items-center gap-2">
+                <h2 className="text-base font-extrabold text-black dark:text-black flex items-center gap-2">
                   <Star className="w-5 h-5 text-plum fill-plum" />
-                  <span>Shop by Brand</span>
+                  <span className="text-black dark:text-black">Shop by Brand</span>
                 </h2>
-                <p className="text-gray-500 text-xs mt-0.5">Explore by selecting your favorite domestic or international brand.</p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs mt-0.5">Explore by selecting your favorite domestic or international brand.</p>
               </div>
 
               <div className="bg-gray-50/50 dark:bg-gray-950/20 p-6 rounded-2xl border border-gray-150 dark:border-gray-800">
@@ -1102,7 +1102,7 @@ export default function Storefront({
                     <button
                       key={brand}
                       onClick={() => onBrandSelect(brand)}
-                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-plum dark:hover:border-orange hover:text-plum dark:hover:text-orange font-extrabold text-xs px-5 py-2.5 rounded-full cursor-pointer transition-all shadow-sm hover:shadow-md active:scale-95 text-gray-750 dark:text-gray-250"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-plum hover:text-plum font-extrabold text-xs px-5 py-2.5 rounded-full cursor-pointer transition-all shadow-sm hover:shadow-md active:scale-95 text-black dark:text-black"
                     >
                       {brand}
                     </button>
