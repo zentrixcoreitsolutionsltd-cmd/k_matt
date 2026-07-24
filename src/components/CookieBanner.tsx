@@ -8,40 +8,76 @@ export default function CookieBanner() {
   const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
+    const handleOpenModal = () => {
+      setIsVisible(true);
+      setShowPreferences(true);
+    };
+    window.addEventListener('open-cookie-preferences', handleOpenModal);
+
     try {
-      const consent = localStorage.getItem('kipchimatt_cookie_consent');
+      const consent = localStorage.getItem('kipchimatt_cookie_consent') || getCookie('kipchimatt_cookie_consent');
       if (!consent) {
         // Show banner after short delay for optimal load
         const timer = setTimeout(() => setIsVisible(true), 800);
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(timer);
+          window.removeEventListener('open-cookie-preferences', handleOpenModal);
+        };
+      } else {
+        const parsed = JSON.parse(consent);
+        if (parsed) {
+          setAnalytics(!!parsed.analytics);
+          setMarketing(!!parsed.marketing);
+        }
       }
     } catch (e) {
       const timer = setTimeout(() => setIsVisible(true), 800);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('open-cookie-preferences', handleOpenModal);
+      };
     }
+
+    return () => window.removeEventListener('open-cookie-preferences', handleOpenModal);
   }, []);
+
+  const saveConsentCookie = (data: { necessary: boolean; analytics: boolean; marketing: boolean; timestamp: string }) => {
+    const val = JSON.stringify(data);
+    try {
+      localStorage.setItem('kipchimatt_cookie_consent', val);
+      // Also write actual browser cookie for full compliance
+      const date = new Date();
+      date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+      document.cookie = `kipchimatt_cookie_consent=${encodeURIComponent(val)}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+    } catch (e) {}
+  };
+
+  const getCookie = (name: string) => {
+    try {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+    } catch (e) {}
+    return null;
+  };
 
   const handleAcceptAll = () => {
     const preferences = { necessary: true, analytics: true, marketing: true, timestamp: new Date().toISOString() };
-    try {
-      localStorage.setItem('kipchimatt_cookie_consent', JSON.stringify(preferences));
-    } catch (e) {}
+    saveConsentCookie(preferences);
     setIsVisible(false);
+    setShowPreferences(false);
   };
 
   const handleAcceptEssential = () => {
     const preferences = { necessary: true, analytics: false, marketing: false, timestamp: new Date().toISOString() };
-    try {
-      localStorage.setItem('kipchimatt_cookie_consent', JSON.stringify(preferences));
-    } catch (e) {}
+    saveConsentCookie(preferences);
     setIsVisible(false);
+    setShowPreferences(false);
   };
 
   const handleSavePreferences = () => {
     const preferences = { necessary: true, analytics, marketing, timestamp: new Date().toISOString() };
-    try {
-      localStorage.setItem('kipchimatt_cookie_consent', JSON.stringify(preferences));
-    } catch (e) {}
+    saveConsentCookie(preferences);
     setShowPreferences(false);
     setIsVisible(false);
   };

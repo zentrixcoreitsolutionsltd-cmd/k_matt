@@ -78,3 +78,30 @@ export interface CategoryMeta {
   icon: string;
   image?: string;
 }
+
+export type AdminRole = 'super_admin' | 'inventory_manager' | 'order_manager' | 'auditor';
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  pin: string;
+  avatar?: string;
+  lastLogin?: string;
+  active: boolean;
+  department?: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  timestamp: string;
+  adminEmail: string;
+  adminName: string;
+  adminRole: AdminRole;
+  action: string;
+  category: 'products' | 'orders' | 'settings' | 'admins' | 'inventory' | 'auth';
+  details: string;
+  targetId?: string | number;
+  ipAddress?: string;
+}

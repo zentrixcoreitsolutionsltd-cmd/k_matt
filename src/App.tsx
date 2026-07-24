@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Phone, Mail, MapPin, Heart, ShoppingBag, Send, CreditCard, Laptop,
-  ArrowUp, Globe, Eye, Settings, Wifi, WifiOff, AlertTriangle, Sparkles, X, Check, EyeOff
+  ArrowUp, Globe, Eye, Settings, Wifi, WifiOff, AlertTriangle, Sparkles, X, Check, EyeOff, Cookie
 } from 'lucide-react';
-import { Product, Order, StoreSettings, CartItem, Customer } from './types';
+import { Product, Order, StoreSettings, CartItem, Customer, AdminUser, AuditLogEntry, AdminRole } from './types';
 import { 
   defaultProducts, defaultSettings, formatMoney, uid, getGlobalCurrency 
 } from './data/catalog';
+import { DEFAULT_ADMIN_USERS, INITIAL_AUDIT_LOGS } from './data/adminDefaults';
 
 // Components
 import Header from './components/Header';
@@ -90,9 +91,143 @@ export default function App() {
   });
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSearch, setActiveSearch] = useState<string>('');
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return sessionStorage.getItem('kipchimatt_admin') === '1';
+
+  // --- Multi-Admin & Security Audit System ---
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>(() => {
+    try {
+      const saved = localStorage.getItem('kipchimatt_admin_users');
+      return saved ? JSON.parse(saved) : DEFAULT_ADMIN_USERS;
+    } catch {
+      return DEFAULT_ADMIN_USERS;
+    }
   });
+
+  const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('kipchimatt_current_admin');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem('kipchimatt_audit_logs');
+      return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
+    } catch {
+      return INITIAL_AUDIT_LOGS;
+    }
+  });
+
+  const isLoggedIn = !!currentAdmin;
+
+  useEffect(() => {
+    localStorage.setItem('kipchimatt_admin_users', JSON.stringify(adminUsers));
+  }, [adminUsers]);
+
+  useEffect(() => {
+    if (currentAdmin) {
+      sessionStorage.setItem('kipchimatt_current_admin', JSON.stringify(currentAdmin));
+      sessionStorage.setItem('kipchimatt_admin', '1');
+    } else {
+      sessionStorage.removeItem('kipchimatt_current_admin');
+      sessionStorage.removeItem('kipchimatt_admin');
+    }
+  }, [currentAdmin]);
+
+  useEffect(() => {
+    localStorage.setItem('kipchimatt_audit_logs', JSON.stringify(auditLogs));
+  }, [auditLogs]);
+
+  const handleAddAuditLog = (
+    category: AuditLogEntry['category'],
+    action: string,
+    details: string,
+    targetId?: string | number
+  ) => {
+    const newLog: AuditLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: new Date().toISOString(),
+      adminEmail: currentAdmin ? currentAdmin.email : 'system@kipchimatt.co.ke',
+      adminName: currentAdmin ? currentAdmin.name : 'System Administrator',
+      adminRole: currentAdmin ? currentAdmin.role : 'super_admin',
+      category,
+      action,
+      details,
+      targetId
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  const handleLoginAdmin = (adminUser: AdminUser) => {
+    const updatedUser = { ...adminUser, lastLogin: new Date().toISOString() };
+    setCurrentAdmin(updatedUser);
+    setAdminUsers(prev => prev.map(u => u.id === adminUser.id ? updatedUser : u));
+    
+    // Log login action
+    const loginLog: AuditLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: new Date().toISOString(),
+      adminEmail: adminUser.email,
+      adminName: adminUser.name,
+      adminRole: adminUser.role,
+      category: 'auth',
+      action: 'ADMIN_LOGIN',
+      details: `Administrator ${adminUser.name} (${adminUser.role.toUpperCase()}) logged into Admin Console`
+    };
+    setAuditLogs(prev => [loginLog, ...prev]);
+  };
+
+  const handleLogoutAdmin = () => {
+    if (currentAdmin) {
+      const logoutLog: AuditLogEntry = {
+        id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        timestamp: new Date().toISOString(),
+        adminEmail: currentAdmin.email,
+        adminName: currentAdmin.name,
+        adminRole: currentAdmin.role,
+        category: 'auth',
+        action: 'ADMIN_LOGOUT',
+        details: `Administrator ${currentAdmin.name} logged out`
+      };
+      setAuditLogs(prev => [logoutLog, ...prev]);
+    }
+    setCurrentAdmin(null);
+    setCurrentView('shop');
+  };
+
+  const handleAddAdmin = (newAdmin: AdminUser) => {
+    setAdminUsers(prev => [newAdmin, ...prev]);
+    handleAddAuditLog('admins', 'CREATE_ADMIN', `Created new administrator profile for ${newAdmin.name} (${newAdmin.email}) with role [${newAdmin.role.toUpperCase()}]`, newAdmin.id);
+  };
+
+  const handleUpdateAdmin = (updatedAdmin: AdminUser) => {
+    setAdminUsers(prev => prev.map(u => u.id === updatedAdmin.id ? updatedAdmin : u));
+    handleAddAuditLog('admins', 'UPDATE_ADMIN', `Updated administrator profile & permissions for ${updatedAdmin.name} (${updatedAdmin.email})`, updatedAdmin.id);
+  };
+
+  const handleDeleteAdmin = (adminId: string) => {
+    const target = adminUsers.find(u => u.id === adminId);
+    setAdminUsers(prev => prev.filter(u => u.id !== adminId));
+    if (target) {
+      handleAddAuditLog('admins', 'DELETE_ADMIN', `Revoked and deleted administrator account for ${target.name} (${target.email})`, adminId);
+    }
+  };
+
+  const handleClearAuditLogs = () => {
+    const archiveNotice: AuditLogEntry = {
+      id: `log-${Date.now()}-archived`,
+      timestamp: new Date().toISOString(),
+      adminEmail: currentAdmin ? currentAdmin.email : 'system@kipchimatt.co.ke',
+      adminName: currentAdmin ? currentAdmin.name : 'Super Admin',
+      adminRole: currentAdmin ? currentAdmin.role : 'super_admin',
+      category: 'admins',
+      action: 'AUDIT_LOG_PURGE',
+      details: 'Audit log history was archived & cleared by Super Administrator'
+    };
+    setAuditLogs([archiveNotice]);
+  };
 
   // --- Drawers & Modals Toggles ---
   const [cartOpen, setCartOpen] = useState(false);
@@ -872,7 +1007,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Universal Sticky Header */}
+      {/* Universal Sticky Header (All Views - Shopper & Admin) */}
       <Header 
         settings={settings}
         currentView={currentView}
@@ -894,9 +1029,7 @@ export default function App() {
         onDeliveryLocationChange={handleDeliveryLocationChange}
         isLoggedIn={isLoggedIn}
         onLogout={() => {
-          setIsLoggedIn(false);
-          sessionStorage.removeItem('kipchimatt_admin');
-          setCurrentView('shop');
+          handleLogoutAdmin();
           showToast('Administrative session signed out.', 'info');
         }}
         isDark={isDark}
@@ -904,13 +1037,47 @@ export default function App() {
         onToggleUserProfile={() => setUserProfileOpen(prev => !prev)}
       />
 
-      {/* --- View Switcher --- */}
-      {currentView === 'shop' ? (
-        /* Storefront Application Flow */
+      {/* --- Main View Router --- */}
+      {currentView === 'admin' ? (
+        /* Standalone Operational Back-Office Console */
+        <AdminPortal 
+          products={products}
+          orders={orders}
+          settings={settings}
+          onProductsChange={setProducts}
+          onOrdersChange={setOrders}
+          onSettingsChange={setSettings}
+          isLoggedIn={isLoggedIn}
+          currentAdmin={currentAdmin}
+          adminUsers={adminUsers}
+          auditLogs={auditLogs}
+          onLoginAdmin={handleLoginAdmin}
+          onLogoutAdmin={handleLogoutAdmin}
+          onAddAdmin={handleAddAdmin}
+          onUpdateAdmin={handleUpdateAdmin}
+          onDeleteAdmin={handleDeleteAdmin}
+          onAddAuditLog={handleAddAuditLog}
+          onClearAuditLogs={handleClearAuditLogs}
+          onLogin={() => {
+            if (adminUsers.length > 0) {
+              handleLoginAdmin(adminUsers[0]);
+            }
+          }}
+          onLogout={handleLogoutAdmin}
+          onShowToast={showToast}
+          adminAlerts={adminAlerts}
+          onTriggerLowStockEmail={handleTriggerLowStockEmail}
+          onSwitchToStorefront={() => {
+            setCurrentView('shop');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          isDark={isDark}
+          onToggleTheme={() => setIsDark(prev => !prev)}
+        />
+      ) : currentView === 'shop' ? (
         <div className="flex-1 flex flex-col">
-          
           {/* Main Hero Marketing Slideshow (only shown on the store home screen) */}
-          {!activeCategory || activeCategory === 'all' && !activeSearch && (
+          {(!activeCategory || activeCategory === 'all') && !activeSearch && (
             <Hero 
               onExploreCategory={handleCategorySelect}
               onScrollToDeals={() => {
@@ -944,7 +1111,7 @@ export default function App() {
             onShowToast={showToast}
           />
         </div>
-      ) : currentView === 'cart' ? (
+      ) : (
         <CartPage 
           cart={cart}
           settings={settings}
@@ -960,33 +1127,9 @@ export default function App() {
           orders={orders}
           currentCustomer={currentCustomer}
         />
-      ) : (
-        /* Back-Office Operational Console Dashboard */
-        <AdminPortal 
-          products={products}
-          orders={orders}
-          settings={settings}
-          onProductsChange={setProducts}
-          onOrdersChange={setOrders}
-          onSettingsChange={setSettings}
-          isLoggedIn={isLoggedIn}
-          onLogin={() => {
-            sessionStorage.setItem('kipchimatt_admin', '1');
-            setIsLoggedIn(true);
-          }}
-          onLogout={() => {
-            sessionStorage.removeItem('kipchimatt_admin');
-            setIsLoggedIn(false);
-            handleDeliveryLocationChange('Nairobi');
-            setCurrentView('shop');
-          }}
-          onShowToast={showToast}
-          adminAlerts={adminAlerts}
-          onTriggerLowStockEmail={handleTriggerLowStockEmail}
-        />
       )}
 
-      {/* Beautiful Supermarket Shopper Footer (rendered on all views) */}
+      {/* Universal Supermarket Footer (All Views) */}
       <footer className="bg-plum-dark text-white/80 pt-14 pb-8 mt-auto border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -1044,12 +1187,12 @@ export default function App() {
                 Shop Categories
               </h4>
               <div className="flex flex-col gap-2.5 text-xs font-semibold">
-                <button onClick={() => handleCategorySelect('food cupboard')} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Food Cupboard</button>
-                <button onClick={() => handleCategorySelect('fresh food')} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Fresh Food & Dairy</button>
-                <button onClick={() => handleCategorySelect('beverages')} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Beverages</button>
-                <button onClick={() => handleCategorySelect('baby & kids')} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Baby & Kids Care</button>
-                <button onClick={() => handleCategorySelect('electronics')} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Home Electronics</button>
-                <button onClick={() => handleCategorySelect('beauty')} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Beauty & Cosmetics</button>
+                <button onClick={() => { setCurrentView('shop'); handleCategorySelect('food cupboard'); }} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Food Cupboard</button>
+                <button onClick={() => { setCurrentView('shop'); handleCategorySelect('fresh food'); }} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Fresh Food & Dairy</button>
+                <button onClick={() => { setCurrentView('shop'); handleCategorySelect('beverages'); }} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Beverages</button>
+                <button onClick={() => { setCurrentView('shop'); handleCategorySelect('baby & kids'); }} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Baby & Kids Care</button>
+                <button onClick={() => { setCurrentView('shop'); handleCategorySelect('electronics'); }} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Home Electronics</button>
+                <button onClick={() => { setCurrentView('shop'); handleCategorySelect('beauty'); }} className="w-fit hover:text-white transition-colors text-left cursor-pointer">Beauty & Cosmetics</button>
               </div>
             </div>
 
@@ -1064,7 +1207,14 @@ export default function App() {
                 <a href="#" className="hover:text-white transition-colors">7-Day Refund Policy</a>
                 <a href="#" className="hover:text-white transition-colors">Track Active Shipment</a>
                 <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-                <a href="#" className="hover:text-white transition-colors">Contact Support Desk</a>
+                <button 
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event('open-cookie-preferences'))}
+                  className="hover:text-yellow transition-colors text-left cursor-pointer flex items-center gap-1.5 font-extrabold text-yellow"
+                >
+                  <Cookie className="w-3.5 h-3.5 text-yellow" />
+                  <span>Privacy Policy & Cookies</span>
+                </button>
               </div>
             </div>
 
@@ -1077,10 +1227,17 @@ export default function App() {
                 <a href="#" className="hover:text-white transition-colors">About Kipchimatt</a>
                 <a href="#" className="hover:text-white transition-colors">Careers & Job Openings</a>
                 <a href="#" className="hover:text-white transition-colors">Our Kenyan Partners</a>
-                <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+                <button 
+                  type="button"
+                  onClick={() => window.dispatchEvent(new Event('open-cookie-preferences'))}
+                  className="hover:text-yellow transition-colors text-left cursor-pointer flex items-center gap-1 text-yellow font-extrabold"
+                >
+                  <Cookie className="w-3.5 h-3.5 text-yellow" />
+                  <span>Manage Cookie Preferences</span>
+                </button>
                 <button 
                   onClick={() => setCurrentView('admin')}
-                  className="w-fit bg-white/10 hover:bg-white/15 text-white font-bold py-1.5 px-4 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="w-fit bg-white/10 hover:bg-white/15 text-white font-bold py-1.5 px-4 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors mt-1"
                 >
                   <Laptop className="w-3.5 h-3.5" />
                   <span>Admin Portal Console</span>
