@@ -26,6 +26,7 @@ interface CartPageProps {
     notes?: string,
     extraDetails?: {
       discountAmount?: number;
+      pointsRedeemed?: number;
       couponCode?: string;
       deliveryType?: 'express' | 'pickup';
       pickupBranch?: string;
@@ -35,6 +36,7 @@ interface CartPageProps {
   ) => Order | null;
   onBackToShop?: () => void;
   orders?: Order[];
+  currentCustomer?: Customer | null;
 }
 
 const PICKUP_BRANCHES = [
@@ -57,7 +59,8 @@ export default function CartPage({
   onDeliveryLocationChange,
   onPlaceOrder,
   onBackToShop,
-  orders
+  orders,
+  currentCustomer
 }: CartPageProps) {
   // Steps: 'basket' | 'shipping' | 'payment' | 'confirmation'
   const [step, setStep] = useState<'basket' | 'shipping' | 'payment' | 'confirmation'>('basket');
@@ -73,10 +76,10 @@ export default function CartPage({
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Coupon System
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: 'percent' | 'flat' | 'free_shipping' } | null>(null);
-  const [couponError, setCouponError] = useState('');
+  // Loyalty Points Redemption State
+  const availablePoints = currentCustomer?.points ?? 120;
+  const [redeemPointsEnabled, setRedeemPointsEnabled] = useState(false);
+  const [pointsToRedeem, setPointsToRedeem] = useState<number>(availablePoints);
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState<'M-PESA' | 'Card' | 'Cash on Delivery'>('M-PESA');
@@ -100,57 +103,19 @@ export default function CartPage({
 
   // Calculations
   const rawSubtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  
-  let discountAmount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.type === 'percent') {
-      discountAmount = Math.round((rawSubtotal * appliedCoupon.discount) / 100);
-    } else if (appliedCoupon.type === 'flat') {
-      discountAmount = Math.min(rawSubtotal, appliedCoupon.discount);
-    }
-  }
+  const maxRedeemablePoints = Math.min(availablePoints, rawSubtotal);
+  const actualPointsToRedeem = Math.min(pointsToRedeem, maxRedeemablePoints);
+  const discountAmount = redeemPointsEnabled ? actualPointsToRedeem : 0;
 
   const subtotalAfterDiscount = Math.max(0, rawSubtotal - discountAmount);
   
   let deliveryFee = 0;
   if (deliveryType === 'express') {
-    if (appliedCoupon?.type === 'free_shipping') {
-      deliveryFee = 0;
-    } else {
-      deliveryFee = subtotalAfterDiscount >= settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
-    }
+    deliveryFee = subtotalAfterDiscount >= settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
   }
 
   const grandTotal = subtotalAfterDiscount + deliveryFee;
   const isFreeDelivery = deliveryType === 'express' && deliveryFee === 0;
-
-  // Coupon handling
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCouponError('');
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-
-    if (code === 'KIPCHIMATT10') {
-      setAppliedCoupon({ code, discount: 10, type: 'percent' });
-    } else if (code === 'BRONZE5') {
-      setAppliedCoupon({ code, discount: 5, type: 'percent' });
-    } else if (code === 'SILVER10') {
-      setAppliedCoupon({ code, discount: 10, type: 'percent' });
-    } else if (code === 'GOLD15') {
-      setAppliedCoupon({ code, discount: 15, type: 'percent' });
-    } else if (code === 'PLATINUM20') {
-      setAppliedCoupon({ code, discount: 20, type: 'percent' });
-    } else if (code === 'FREE254') {
-      setAppliedCoupon({ code, discount: 0, type: 'free_shipping' });
-    } else if (code === 'SAVE500') {
-      setAppliedCoupon({ code, discount: 500, type: 'flat' });
-    } else if (code === 'WELCOME100') {
-      setAppliedCoupon({ code, discount: 100, type: 'flat' });
-    } else {
-      setCouponError('Invalid coupon code. Try "BRONZE5", "SILVER10", "GOLD15", "PLATINUM20", or "FREE254"');
-    }
-  };
 
   // Card formatting
   const handleCardNumberChange = (val: string) => {
@@ -219,7 +184,7 @@ export default function CartPage({
 
     const created = onPlaceOrder(customerData, finalPaymentMethod, notes, {
       discountAmount,
-      couponCode: appliedCoupon?.code,
+      pointsRedeemed: redeemPointsEnabled ? actualPointsToRedeem : 0,
       deliveryType,
       pickupBranch: deliveryType === 'pickup' ? selectedBranch : undefined,
       transactionRef: finalTxnRef,
@@ -957,35 +922,80 @@ export default function CartPage({
                 </span>
               </h3>
 
-              {/* Coupon Form */}
-              <form onSubmit={handleApplyCoupon} className="space-y-2">
-                <label className="block text-xs font-bold text-gray-600 dark:text-gray-300">Have a Promo Coupon?</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Tag className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-3" />
-                    <input 
-                      type="text" 
-                      placeholder="e.g. KIPCHIMATT10" 
-                      value={couponInput}
-                      onChange={e => setCouponInput(e.target.value)}
-                      className="w-full pl-8 pr-2 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs uppercase font-extrabold outline-none focus:border-plum"
-                    />
+              {/* Loyalty Points Redemption Box */}
+              <div className="bg-plum/5 dark:bg-gray-800/80 border border-plum/15 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-black text-gray-900 dark:text-white">
+                    <Sparkles className="w-4 h-4 text-yellow" />
+                    <span>Loyalty Points (Optional)</span>
                   </div>
-                  <button 
-                    type="submit"
-                    className="bg-plum hover:bg-plum-dark text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer transition-colors"
-                  >
-                    Apply
-                  </button>
+                  <span className="text-[10px] font-extrabold bg-plum/10 dark:bg-pink-900/40 text-plum dark:text-pink-300 px-2 py-0.5 rounded-full">
+                    1 Pt = KSh 1
+                  </span>
                 </div>
-                {couponError && <p className="text-[11px] text-red font-bold">{couponError}</p>}
-                {appliedCoupon && (
-                  <div className="bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-300 p-2 rounded-xl text-[11px] font-bold flex items-center justify-between border border-green-200 dark:border-green-800">
-                    <span>🎉 Coupon "{appliedCoupon.code}" Applied!</span>
-                    <button type="button" onClick={() => setAppliedCoupon(null)} className="text-red hover:underline ml-2">Remove</button>
+
+                <div className="text-xs text-gray-700 dark:text-gray-300 flex items-center justify-between font-bold bg-white dark:bg-gray-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
+                  <span>Available Balance:</span>
+                  <span className="text-plum dark:text-pink-400 font-black">{availablePoints} Points (KSh {availablePoints})</span>
+                </div>
+
+                {availablePoints > 0 ? (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight">
+                      Using points is completely optional. Leave unchecked to save points for later orders.
+                    </p>
+
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-800 dark:text-gray-200 select-none">
+                        <input 
+                          type="checkbox"
+                          checked={redeemPointsEnabled}
+                          onChange={(e) => {
+                            setRedeemPointsEnabled(e.target.checked);
+                            if (e.target.checked && pointsToRedeem === 0) {
+                              setPointsToRedeem(Math.min(availablePoints, rawSubtotal));
+                            }
+                          }}
+                          className="w-4 h-4 accent-plum rounded cursor-pointer"
+                        />
+                        <span>Redeem points on this order</span>
+                      </label>
+
+                      {redeemPointsEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => setPointsToRedeem(Math.min(availablePoints, rawSubtotal))}
+                          className="text-[10px] bg-plum hover:bg-plum-dark text-white font-extrabold px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Max ({Math.min(availablePoints, rawSubtotal)} pts)
+                        </button>
+                      )}
+                    </div>
+
+                    {redeemPointsEnabled && (
+                      <div className="flex items-center gap-2 pt-1">
+                        <input 
+                          type="number"
+                          min={0}
+                          max={Math.min(availablePoints, rawSubtotal)}
+                          value={pointsToRedeem}
+                          onChange={(e) => {
+                            const val = Math.max(0, Math.min(Number(e.target.value) || 0, Math.min(availablePoints, rawSubtotal)));
+                            setPointsToRedeem(val);
+                          }}
+                          className="w-full px-3 py-1.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-black text-gray-900 dark:text-white outline-none focus:border-plum"
+                          placeholder="Points to redeem"
+                        />
+                        <span className="text-xs font-black text-green shrink-0">
+                          -KSh {actualPointsToRedeem}
+                        </span>
+                      </div>
+                    )}
                   </div>
+                ) : (
+                  <p className="text-[11px] text-gray-500 font-medium">Earn points on every purchase to unlock optional discounts on future orders.</p>
                 )}
-              </form>
+              </div>
 
               {/* Financial Lines */}
               <div className="space-y-2.5 text-xs border-t border-gray-150 dark:border-gray-800 pt-3">
@@ -996,7 +1006,7 @@ export default function CartPage({
 
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-green font-bold">
-                    <span>Coupon Savings</span>
+                    <span>Loyalty Points Discount ({actualPointsToRedeem} PTS)</span>
                     <span>-{formatMoney(discountAmount)}</span>
                   </div>
                 )}

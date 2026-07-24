@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, Download, Copy, Check, Send, ShieldCheck, QrCode, CheckCircle2, FileText } from 'lucide-react';
+import { X, Printer, Download, Copy, Check, Send, ShieldCheck, QrCode, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 import { Order, StoreSettings } from '../types';
 import { formatMoney } from '../data/catalog';
 import { generatePdfReceipt } from '../utils/generatePdfReceipt';
@@ -271,6 +271,16 @@ export default function ReceiptModal({
               </span>
             </div>
 
+            {order.pointsRedeemed && order.pointsRedeemed > 0 ? (
+              <div className="sm:text-center">
+                <span className="text-gray-500 dark:text-gray-400 font-medium block text-[10px] uppercase">Loyalty Reward</span>
+                <span className="font-black text-plum dark:text-pink-400 text-xs flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow" />
+                  <span>{order.pointsRedeemed} PTS Redeemed (-{formatMoney(order.discountAmount || 0)})</span>
+                </span>
+              </div>
+            ) : null}
+
             <div className="sm:text-right">
               <span className="text-gray-500 dark:text-gray-400 font-medium block text-[10px] uppercase">Payment Channel & Ref</span>
               <span className="font-extrabold text-gray-900 dark:text-white break-all">{order.payment} ({txnRef})</span>
@@ -313,7 +323,7 @@ export default function ReceiptModal({
 
             {order.discountAmount && order.discountAmount > 0 ? (
               <div className="flex justify-between text-green font-bold">
-                <span>Coupon Discount ({order.couponCode || 'APPLIED'})</span>
+                <span>Loyalty Points Discount ({order.pointsRedeemed ? `${order.pointsRedeemed} PTS` : 'APPLIED'})</span>
                 <span>-{formatMoney(order.discountAmount)}</span>
               </div>
             ) : null}
@@ -357,7 +367,10 @@ export default function ReceiptModal({
             <div className="text-right text-[10px] text-gray-500 dark:text-gray-400 space-y-0.5 min-w-[120px]">
               <p className="font-bold text-gray-700 dark:text-gray-300">Terminal: POS-T04</p>
               <p>Cashier: System Auto-ETR</p>
-              <p className="text-plum dark:text-pink-400 font-extrabold">Points: +{Math.floor(order.total / 100)}</p>
+              {order.pointsRedeemed && order.pointsRedeemed > 0 ? (
+                <p className="text-amber-600 dark:text-amber-400 font-extrabold">Redeemed: -{order.pointsRedeemed} PTS</p>
+              ) : null}
+              <p className="text-plum dark:text-pink-400 font-extrabold">Earned: +{Math.floor(order.total / 100)} PTS</p>
             </div>
           </div>
 

@@ -129,7 +129,7 @@ export function generatePdfReceipt(order: Order, settings: StoreSettings): void 
   if (order.discountAmount && order.discountAmount > 0) {
     y += 5;
     doc.setTextColor(0, 128, 0);
-    doc.text(`Discount (${order.couponCode || 'Applied'}):`, 140, y);
+    doc.text(`Points Discount (${order.pointsRedeemed ? `${order.pointsRedeemed} PTS` : 'Redeemed'}):`, 140, y);
     doc.text(`-${formatMoney(order.discountAmount)}`, 190, y, { align: 'right' });
     doc.setTextColor(40, 40, 40);
   }
@@ -164,7 +164,10 @@ export function generatePdfReceipt(order: Order, settings: StoreSettings): void 
   doc.setFontSize(8);
   doc.setTextColor(60, 60, 60);
   doc.text(`POS REGISTER AUTH CODE: ${receiptNo}`, 20, y + 6);
-  doc.text(`LOYALTY POINTS EARNED: +${Math.floor(order.total / 100)} Points`, 20, y + 11);
+  const ptsText = order.pointsRedeemed && order.pointsRedeemed > 0 
+    ? `POINTS REDEEMED: -${order.pointsRedeemed} PTS | EARNED: +${Math.floor(order.total / 100)} PTS`
+    : `LOYALTY POINTS EARNED: +${Math.floor(order.total / 100)} PTS`;
+  doc.text(ptsText, 20, y + 11);
 
   // Decorative barcode bars
   let barX = 20;

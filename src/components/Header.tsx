@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Phone, MapPin, Truck, Lock, Menu, Search, User, Heart, ShoppingCart, 
   X, LayoutGrid, LogOut, Store, ArrowRight, Mic, MicOff, Sun, Moon,
-  ChevronDown, HelpCircle, ShieldCheck, Tag, Sparkles, ChevronRight
+  ChevronDown, HelpCircle, ShieldCheck, Tag, Sparkles, ChevronRight, Globe
 } from 'lucide-react';
 import { StoreSettings, CategoryMeta } from '../types';
-import { categoryMeta, formatMoney } from '../data/catalog';
+import { categoryMeta, formatMoney, CURRENCIES, LANG_TO_CURRENCY, CURRENCY_TO_LANG, getGlobalCurrency, setGlobalCurrency } from '../data/catalog';
+import { getGlobalLang, setGlobalLang, applyGoogleTranslate, t } from '../data/i18n';
 import { KENYA_COUNTIES } from '../data/counties';
+import { LanguageCurrencyModal } from './LanguageCurrencyModal';
 
 interface HeaderProps {
   settings: StoreSettings;
@@ -46,20 +48,32 @@ export default function Header({
   onToggleUserProfile
 }: HeaderProps) {
   const getInitialLanguage = () => {
-    const match = document.cookie.match(/googtrans=\/en\/([^;]+)/);
-    return match ? match[1] : 'en';
+    return getGlobalLang();
   };
 
   const [selectedLang, setSelectedLang] = useState(getInitialLanguage);
+  const [currentCurrency, setCurrentCurrency] = useState(getGlobalCurrency());
+  const [langModalOpen, setLangModalOpen] = useState(false);
   const [searchVal, setSearchVal] = useState('');
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [searchCategory, setSearchCategory] = useState('all');
 
+  useEffect(() => {
+    const handleCurrChange = () => setCurrentCurrency(getGlobalCurrency());
+    const handleLangChange = () => setSelectedLang(getGlobalLang());
+    window.addEventListener('currency-changed', handleCurrChange);
+    window.addEventListener('lang-changed', handleLangChange);
+    return () => {
+      window.removeEventListener('currency-changed', handleCurrChange);
+      window.removeEventListener('lang-changed', handleLangChange);
+    };
+  }, []);
+
   const languages = [
     { code: 'en', label: 'English', flag: '🇬🇧' },
-    { code: 'sw', label: 'Swahili', flag: '🇰🇪' },
+    { code: 'sw', label: 'Kiswahili', flag: '🇰🇪' },
     { code: 'fr', label: 'Français', flag: '🇫🇷' },
     { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
     { code: 'es', label: 'Español', flag: '🇪🇸' },
@@ -74,16 +88,24 @@ export default function Header({
 
   const handleLanguageChange = (langCode: string) => {
     setSelectedLang(langCode);
-    try {
-      document.cookie = `googtrans=/en/${langCode}; path=/;`;
-      document.cookie = `googtrans=/en/${langCode}; path=/; domain=${window.location.hostname}`;
-      
-      const selectEl = document.querySelector('.goog-te-combo') as HTMLSelectElement;
-      if (selectEl) {
-        selectEl.value = langCode;
-        selectEl.dispatchEvent(new Event('change'));
-      }
-    } catch (e) {}
+    
+    // Automatically match cost/currency to chosen language
+    const targetCurr = LANG_TO_CURRENCY[langCode] || 'KES';
+    setGlobalCurrency(targetCurr);
+    setCurrentCurrency(targetCurr);
+
+    applyGoogleTranslate(langCode);
+  };
+
+  const handleCurrencyChange = (currCode: string) => {
+    setGlobalCurrency(currCode);
+    setCurrentCurrency(currCode);
+
+    // Automatically match language to chosen currency
+    const targetLang = CURRENCY_TO_LANG[currCode];
+    if (targetLang && targetLang !== selectedLang) {
+      handleLanguageChange(targetLang);
+    }
   };
 
   const startVoiceListening = () => {
@@ -193,56 +215,75 @@ export default function Header({
             </div>
 
             {/* Mobile-Only Quick Access Actions */}
-            <div className="flex md:hidden items-center gap-1 sm:gap-2">
+            <div className="flex md:hidden items-center gap-1 sm:gap-1.5 shrink-0">
+              {/* Language & Currency Translator Button (Mobile Header) */}
+              <button
+                type="button"
+                onClick={() => setLangModalOpen(true)}
+                className="flex items-center gap-1 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/25 px-2 py-1 rounded-md text-white text-xs font-black cursor-pointer transition-all shrink-0 shadow-2xs"
+                title="Change Language & Currency"
+              >
+                <span className="text-xs">{languages.find(l => l.code === selectedLang)?.flag || '🌐'}</span>
+                <span className="text-[11px] text-yellow font-black uppercase">{CURRENCIES[currentCurrency]?.code || 'KES'}</span>
+                <ChevronDown className="w-2.5 h-2.5 text-gray-200" />
+              </button>
+
               {/* Theme Toggle (Mobile) */}
               <button 
                 onClick={onToggleTheme}
-                className="p-1.5 rounded-full hover:bg-white/10 text-white cursor-pointer transition-all shrink-0"
+                className="p-1 rounded-full hover:bg-white/10 text-white cursor-pointer transition-all shrink-0"
                 title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
               >
-                {isDark ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-300" />}
+                {isDark ? <Sun className="w-3.5 h-3.5 text-white" /> : <Moon className="w-3.5 h-3.5 text-gray-300" />}
               </button>
 
               {/* Wishlist Widget (Mobile) */}
               {currentView === 'shop' && (
                 <button 
                   onClick={onToggleWishlist}
-                  className="p-1.5 rounded-sm hover:bg-white/10 text-white cursor-pointer relative shrink-0 transition-all"
+                  className="p-1.5 rounded hover:bg-white/10 text-white cursor-pointer relative shrink-0 transition-all"
                   aria-label="Wishlist"
-                  title="Wishlist"
+                  title={t('wishlist')}
                 >
-                  <Heart className="w-5 h-5 text-white fill-white/20" />
+                  <Heart className="w-4.5 h-4.5 text-white fill-white/20" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-white text-plum text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center shadow-sm">
+                    <span className="absolute -top-0.5 -right-0.5 bg-white text-plum text-[9px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center shadow-xs">
                       {wishlistCount}
                     </span>
                   )}
                 </button>
               )}
 
-              {/* Compact Account Link (Mobile) */}
-              <button 
-                onClick={onToggleUserProfile}
-                className="flex flex-col items-center justify-center px-1.5 py-1 text-white hover:text-gray-200 cursor-pointer shrink-0"
-                title="Account"
-              >
-                <span className="text-[9px] text-gray-200 leading-none font-medium">Hello</span>
-                <span className="text-xs font-black leading-none mt-0.5">Profile</span>
-              </button>
+              {/* Compact Account / Sign In Link (Mobile) */}
+              {currentView === 'shop' && (
+                <button 
+                  onClick={onToggleUserProfile}
+                  className="flex flex-col items-center justify-center px-1.5 py-0.5 text-white hover:text-gray-200 cursor-pointer shrink-0 rounded hover:bg-white/10 transition-all"
+                  title={isLoggedIn ? t('hello_customer') : t('hello_sign_in')}
+                >
+                  <User className="w-4 h-4 text-white" />
+                  <span className="text-[9px] font-bold leading-none mt-0.5 max-w-[42px] truncate">
+                    {isLoggedIn ? 'Account' : 'Sign In'}
+                  </span>
+                </button>
+              )}
 
               {/* Cart Widget (Mobile) */}
-              <button 
-                onClick={onToggleCart}
-                className="flex items-center p-1.5 rounded-sm hover:bg-white/10 cursor-pointer relative shrink-0 select-none group transition-all"
-                aria-label="Shopping Cart"
-              >
-                <div className="relative">
-                  <ShoppingCart className="w-5.5 h-5.5 text-white" />
-                  <span className="absolute -top-1 left-1/2 -translate-x-1/2 bg-white text-plum text-[10px] font-black rounded-full px-1 min-w-[16px] text-center leading-none py-0.5 shadow-sm">
-                    {cartCount}
-                  </span>
-                </div>
-              </button>
+              {currentView === 'shop' && (
+                <button 
+                  onClick={onToggleCart}
+                  className="flex items-center p-1.5 rounded hover:bg-white/10 cursor-pointer relative shrink-0 select-none group transition-all"
+                  aria-label="Shopping Cart"
+                  title={t('cart')}
+                >
+                  <div className="relative">
+                    <ShoppingCart className="w-5 h-5 text-white" />
+                    <span className="absolute -top-1 left-1/2 -translate-x-1/2 bg-white text-plum text-[9px] font-black rounded-full px-1 min-w-[15px] text-center leading-none py-0.5 shadow-xs">
+                      {cartCount}
+                    </span>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
@@ -253,7 +294,7 @@ export default function Header({
           >
             <MapPin className="w-4 h-4 text-yellow shrink-0 self-center" />
             <div className="flex flex-col text-left min-w-0 flex-1">
-              <span className="text-[10px] text-gray-300 font-semibold leading-none mb-0.5">Deliver to</span>
+              <span className="text-[10px] text-gray-300 font-semibold leading-none mb-0.5">{t('deliver_to')}</span>
               <div className="relative flex items-center min-w-0 w-full">
                 <select 
                   value={deliveryLocation}
@@ -286,7 +327,7 @@ export default function Header({
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] lg:text-xs px-2 lg:px-3 h-full outline-none cursor-pointer font-bold border-r border-gray-300 shrink-0 max-w-[85px] lg:max-w-[135px] select-none transition-colors truncate"
                 title="Select Department"
               >
-                <option value="all">All Departments</option>
+                <option value="all">{t('all_departments')}</option>
                 {categoryMeta.filter(cat => cat.key !== 'all').map(cat => (
                   <option key={cat.key} value={cat.key}>
                     {cat.label}
@@ -297,7 +338,7 @@ export default function Header({
               {/* Central text input */}
               <input 
                 type="text" 
-                placeholder="Search supermarket departments, brands..." 
+                placeholder={t('search_placeholder')} 
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
                 className="flex-1 px-2.5 lg:px-4 h-full outline-none text-xs lg:text-sm text-gray-900 placeholder-gray-400 font-medium min-w-0"
@@ -328,22 +369,21 @@ export default function Header({
           {/* Right Hand Navigation Widgets - Desktop Only */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2.5 xl:gap-3.5 shrink-0" id="header-right-actions">
             
-            {/* Amazon-Style Language / Currency Selector */}
-            <div className="hidden xl:flex relative items-center rounded-sm border border-transparent hover:border-white px-1.5 py-1 cursor-pointer shrink-0 transition-all">
-              <select
-                value={selectedLang}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                className="bg-transparent text-white font-extrabold text-[11px] cursor-pointer outline-none appearance-none pr-4"
-                title="Select Language"
-              >
-                {languages.slice(0, 6).map(lang => (
-                  <option key={lang.code} value={lang.code} className="text-gray-950 bg-white font-semibold">
-                    {lang.flag} {lang.code.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-2.5 h-2.5 text-gray-200 absolute right-1 pointer-events-none" />
-            </div>
+            {/* Amazon & Kipchimatt Styled Language & Currency Selector Trigger */}
+            <button
+              type="button"
+              onClick={() => setLangModalOpen(true)}
+              className="hidden lg:flex items-center gap-1.5 bg-white/10 hover:bg-white/20 active:scale-98 border border-white/25 px-2.5 py-1.5 rounded-lg text-white shrink-0 transition-all cursor-pointer shadow-2xs group"
+              title="Change Language & Currency"
+            >
+              <span className="text-sm">{languages.find(l => l.code === selectedLang)?.flag || '🌐'}</span>
+              <div className="flex items-center gap-1 font-black text-xs">
+                <span className="text-white tracking-wide uppercase">{selectedLang}</span>
+                <span className="text-white/30 text-xs">•</span>
+                <span className="text-yellow">{CURRENCIES[currentCurrency]?.code || 'KES'} ({CURRENCIES[currentCurrency]?.symbol || 'KSh'})</span>
+              </div>
+              <ChevronDown className="w-3 h-3 text-gray-300 group-hover:text-yellow transition-colors" />
+            </button>
 
             {/* Account & Lists panel with elegant Hover State */}
             {currentView === 'shop' && (
@@ -353,7 +393,7 @@ export default function Header({
                 id="account-menu-trigger"
               >
                 <span className="text-[10px] lg:text-[11px] text-gray-200 font-normal leading-none mb-0.5">
-                  {isLoggedIn ? 'Hello, Customer' : 'Hello, Sign In'}
+                  {isLoggedIn ? t('hello_customer') : t('hello_sign_in')}
                 </span>
                 <span className="text-[11px] lg:text-xs text-white font-black leading-none flex items-center gap-0.5">
                   Account <ChevronDown className="w-2.5 h-2.5 text-gray-200" />
@@ -422,18 +462,61 @@ export default function Header({
         </div>
 
         {/* Mobile Search Bar Row (shown ONLY on mobile/tablet screens below md) */}
-        <div className="md:hidden px-4 pb-2.5 pt-1 bg-plum w-full" id="search-bar-container-mobile">
+        <div className="md:hidden px-3 sm:px-4 pb-2.5 pt-1 bg-plum w-full space-y-1.5" id="search-bar-container-mobile">
+          {/* Quick Deliver To Location Pill for Mobile */}
+          <div className="flex items-center justify-between text-white text-[11px] font-bold px-1">
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-yellow shrink-0" />
+              <span className="text-gray-200 font-normal shrink-0">Deliver to:</span>
+              <div className="relative inline-flex items-center min-w-0">
+                <select 
+                  value={deliveryLocation}
+                  onChange={(e) => onDeliveryLocationChange(e.target.value)}
+                  className="bg-transparent text-yellow font-black outline-none cursor-pointer pr-4 appearance-none text-[11px] truncate max-w-[150px]"
+                  title="Select Delivery County"
+                >
+                  {KENYA_COUNTIES.map((c) => (
+                    <option key={c.code} value={c.name} className="text-gray-950 bg-white font-bold">
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3 h-3 text-yellow absolute right-0 pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 text-[10px] text-green-300 font-extrabold">
+              <Truck className="w-3 h-3 text-yellow" />
+              <span>Kikapu Express</span>
+            </div>
+          </div>
+
           <form 
             onSubmit={handleSearchSubmit} 
-            className="w-full h-10 bg-white rounded-md flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-orange border border-transparent transition-all"
+            className="w-full h-10 bg-white rounded-md flex items-center overflow-hidden focus-within:ring-2 focus-within:ring-orange border border-transparent transition-all shadow-xs"
           >
+            {/* Mobile Department Selector */}
+            <select
+              value={searchCategory}
+              onChange={handleCategoryDropdownChange}
+              className="bg-gray-100 text-gray-800 text-[11px] px-2 h-full outline-none cursor-pointer font-bold border-r border-gray-300 shrink-0 max-w-[95px] truncate"
+              title="Select Department"
+            >
+              <option value="all">All</option>
+              {categoryMeta.filter(cat => cat.key !== 'all').map(cat => (
+                <option key={cat.key} value={cat.key}>
+                  {cat.label}
+                </option>
+              ))}
+            </select>
+
             {/* Search text input */}
             <input 
               type="text" 
               placeholder="Search Kipchimatt Supermarket..." 
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              className="flex-1 px-3.5 h-full outline-none text-sm text-gray-900 placeholder-gray-400 font-medium min-w-0"
+              className="flex-1 px-2.5 h-full outline-none text-xs text-gray-900 placeholder-gray-400 font-medium min-w-0"
               aria-label="Search inputs"
             />
 
@@ -441,91 +524,79 @@ export default function Header({
             <button 
               type="button"
               onClick={startVoiceListening}
-              className={`w-9 h-9 shrink-0 rounded-full my-auto mr-1 flex items-center justify-center cursor-pointer transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'}`}
+              className={`w-8 h-8 shrink-0 rounded-full my-auto mr-1 flex items-center justify-center cursor-pointer transition-all ${isListening ? 'bg-red-500 text-white animate-pulse shadow' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'}`}
               title="Search hands-free with voice"
             >
-              {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4.5 h-4.5" />}
+              {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-4 h-4" />}
             </button>
 
             {/* Trigger search button */}
             <button 
               type="submit"
-              className="h-full px-4 bg-orange hover:bg-orange/80 text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              className="h-full px-3.5 bg-orange hover:bg-orange/80 text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
               aria-label="Submit Search Query"
             >
-              <Search className="w-5 h-5 stroke-[2.5]" />
+              <Search className="w-4.5 h-4.5 stroke-[2.5]" />
             </button>
           </form>
         </div>
       </header>
 
-      {/* 2. SECONDARY SUB-HEADER ROW (All Categories & Quick Links) */}
+      {/* 2. SECONDARY SUB-HEADER ROW (All Categories & Quick Links - Mobile Scrollable) */}
       <nav className="bg-plum-dark text-white py-1 text-xs font-semibold flex items-center justify-between shadow-sm border-t border-white/5 select-none overflow-x-auto whitespace-nowrap scrollbar-none w-full">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 min-w-max">
           
-          {/* Left Navigation quick-links & Drawer Toggle */}
-          <div className="flex items-center gap-1.5">
+          {/* Navigation quick-links & Drawer Toggle */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
             
             {/* Mega Menu Drawer Toggle */}
             <button 
               onClick={() => setMegaMenuOpen(true)}
-              className="flex items-center gap-1.5 bg-white text-plum hover:bg-yellow hover:text-plum cursor-pointer transition-all font-black uppercase tracking-wider py-1 px-2.5 rounded-md shadow-sm"
+              className="flex items-center gap-1.5 bg-white text-plum hover:bg-yellow hover:text-plum cursor-pointer transition-all font-black uppercase tracking-wider py-1 px-2.5 rounded-md shadow-sm shrink-0"
               id="mega-menu-trigger-all"
             >
               <Menu className="w-4 h-4 stroke-[2.5] text-plum" />
               <span className="text-plum">All</span>
             </button>
  
-            {/* Direct Category Access Links */}
-            <div className="hidden md:flex items-center gap-1">
+            {/* Direct Category Access Links - Scrollable on mobile & desktop */}
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
               <button 
                 onClick={() => selectCategory('all')} 
-                className="border border-transparent hover:border-white py-1.5 px-2.5 rounded-sm text-gray-200 hover:text-white transition-all duration-150 cursor-pointer"
+                className="border border-transparent hover:border-white py-1 px-2 rounded text-gray-200 hover:text-white transition-all text-[11px] sm:text-xs font-bold cursor-pointer shrink-0"
               >
-                Today's Deals
+                ⚡ Today's Deals
               </button>
               <button 
                 onClick={() => selectCategory('fresh food')} 
-                className="border border-transparent hover:border-white py-1.5 px-2.5 rounded-sm text-gray-200 hover:text-white transition-all duration-150 cursor-pointer"
+                className="border border-transparent hover:border-white py-1 px-2 rounded text-gray-200 hover:text-white transition-all text-[11px] sm:text-xs font-bold cursor-pointer shrink-0"
               >
-                Fresh Produce
+                🍏 Fresh Produce
               </button>
               <button 
                 onClick={() => selectCategory('electronics')} 
-                className="border border-transparent hover:border-white py-1.5 px-2.5 rounded-sm text-gray-200 hover:text-white transition-all duration-150 cursor-pointer"
+                className="border border-transparent hover:border-white py-1 px-2 rounded text-gray-200 hover:text-white transition-all text-[11px] sm:text-xs font-bold cursor-pointer shrink-0"
               >
-                Electricals & Batteries
+                Electricals
               </button>
               <button 
                 onClick={() => selectCategory('apparel')} 
-                className="border border-transparent hover:border-white py-1.5 px-2.5 rounded-sm text-gray-200 hover:text-white transition-all duration-150 cursor-pointer"
+                className="hidden sm:inline-block border border-transparent hover:border-white py-1 px-2 rounded text-gray-200 hover:text-white transition-all text-[11px] sm:text-xs font-bold cursor-pointer shrink-0"
               >
                 Everyday Wear
               </button>
               <button 
-                onClick={() => selectCategory('sports')} 
-                className="border border-transparent hover:border-white py-1.5 px-2.5 rounded-sm text-gray-200 hover:text-white transition-all duration-150 cursor-pointer"
-              >
-                Fitness & Travel
-              </button>
-              <button 
-                onClick={() => selectCategory('books')} 
-                className="border border-transparent hover:border-white py-1.5 px-2.5 rounded-sm text-gray-200 hover:text-white transition-all duration-150 cursor-pointer"
-              >
-                Books & Planners
-              </button>
-              <button 
                 onClick={() => selectCategory('liquor')} 
-                className="border border-transparent hover:border-yellow font-bold py-1.5 px-2.5 rounded-sm text-yellow transition-all duration-150 cursor-pointer flex items-center gap-1"
+                className="border border-transparent hover:border-yellow font-bold py-1 px-2 rounded text-yellow transition-all text-[11px] sm:text-xs cursor-pointer flex items-center gap-1 shrink-0"
               >
-                <Tag className="w-3.5 h-3.5 text-yellow" />
+                <Tag className="w-3 h-3 text-yellow" />
                 Liquor Cellar
               </button>
             </div>
           </div>
 
           {/* Right Side badging and Portal redirects */}
-          <div className="flex items-center gap-4 text-[11px] font-bold text-gray-300">
+          <div className="flex items-center gap-2 sm:gap-4 text-[11px] font-bold text-gray-300 shrink-0">
             
             {/* Free Delivery Threshold Alert */}
             <span className="hidden lg:flex items-center gap-1 text-green bg-green-light/10 px-2 py-0.5 rounded border border-green/20">
@@ -535,37 +606,37 @@ export default function Header({
 
             {/* Admin toggle portal buttons */}
             {currentView !== 'admin' ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {currentView === 'cart' && (
                   <button 
                     onClick={() => onViewChange('shop')}
-                    className="flex items-center gap-1 hover:text-white py-1 px-2.5 rounded bg-white/10 text-white cursor-pointer transition-all border border-white/5 active:scale-95 shrink-0"
+                    className="flex items-center gap-1 hover:text-white py-1 px-2 rounded bg-white/10 text-white cursor-pointer transition-all border border-white/5 active:scale-95 shrink-0 text-[11px]"
                   >
                     <Store className="w-3 h-3" />
-                    <span>View Storefront</span>
+                    <span>Storefront</span>
                   </button>
                 )}
                 <button 
                   onClick={() => onViewChange('admin')}
-                  className="flex items-center gap-1 hover:text-white py-1 px-2.5 rounded bg-white/10 text-white cursor-pointer transition-all border border-white/5 active:scale-95 shrink-0"
+                  className="flex items-center gap-1 hover:text-white py-1 px-2 rounded bg-white/10 text-white cursor-pointer transition-all border border-white/5 active:scale-95 shrink-0 text-[11px]"
                 >
                   <Lock className="w-3 h-3" />
-                  <span>Admin Portal</span>
+                  <span>Admin</span>
                 </button>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={() => onViewChange('shop')}
-                  className="flex items-center gap-1 hover:text-white py-1 px-2.5 rounded bg-orange text-white cursor-pointer font-bold transition-all"
+                  className="flex items-center gap-1 hover:text-white py-1 px-2 rounded bg-orange text-white cursor-pointer font-bold transition-all text-[11px]"
                 >
                   <Store className="w-3 h-3" />
-                  <span>View Storefront</span>
+                  <span>Storefront</span>
                 </button>
                 {isLoggedIn && (
                   <button 
                     onClick={onLogout}
-                    className="flex items-center gap-1 text-red hover:text-red-light cursor-pointer"
+                    className="flex items-center gap-1 text-red hover:text-red-light cursor-pointer text-[11px]"
                   >
                     <LogOut className="w-3 h-3" />
                     <span>Logout</span>
@@ -803,44 +874,47 @@ export default function Header({
             className="fixed inset-0 bg-black/60 z-50 transition-opacity backdrop-blur-xs"
             aria-hidden="true"
           />
-          <nav className="fixed top-0 left-0 w-[300px] max-w-[85%] h-full bg-white dark:bg-gray-900 shadow-2xl z-55 flex flex-col font-sans">
+          <nav className="fixed top-0 left-0 w-[320px] max-w-[88%] h-full bg-white dark:bg-gray-900 shadow-2xl z-55 flex flex-col font-sans">
             {/* Header */}
-            <div className="bg-plum text-white p-5 flex flex-col gap-3 relative border-b border-plum-dark">
+            <div className="bg-plum text-white p-4 sm:p-5 flex flex-col gap-3 relative border-b border-plum-dark shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-250 border border-white/20 flex items-center justify-center p-1">
-                  <User className="w-6 h-6 text-plum" />
+                <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center p-1 shrink-0">
+                  <User className="w-6 h-6 text-yellow" />
                 </div>
-                <div className="flex flex-col">
-                  <h2 className="font-black text-sm tracking-tight leading-none text-yellow">
+                <div className="flex flex-col min-w-0">
+                  <h2 className="font-black text-sm tracking-tight leading-none text-yellow truncate">
                     {isLoggedIn ? 'Hello, Customer' : 'Hello, Sign In'}
                   </h2>
-                  <span className="text-[10px] text-gray-400 mt-1 font-bold">Manage Account & Tracking</span>
+                  <span className="text-[10px] text-gray-200 mt-1 font-bold">Manage Account, Wishlist & Tracking</span>
                 </div>
               </div>
               
               <button 
                 onClick={() => setMobileMenuOpen(false)}
-                className="absolute top-5 right-4 text-gray-400 hover:text-white p-1 cursor-pointer rounded-full hover:bg-white/10 transition-colors"
+                className="absolute top-4 right-3 text-gray-300 hover:text-white p-1 cursor-pointer rounded-full hover:bg-white/10 transition-colors"
                 aria-label="Close Drawer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Mobile links */}
-            <div className="flex-1 overflow-y-auto py-3 flex flex-col font-bold text-sm text-gray-700 dark:text-gray-300">
+            {/* Mobile drawer scrollable body */}
+            <div className="flex-1 overflow-y-auto py-3 flex flex-col font-bold text-sm text-gray-700 dark:text-gray-300 space-y-1">
               
               {/* Deliver To County Selection (Mobile) */}
-              <div className="mx-4 mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col gap-1.5">
-                <div className="flex items-center gap-2 text-xs font-black text-plum dark:text-pink-300">
-                  <MapPin className="w-4 h-4 text-plum dark:text-pink-400" />
-                  <span>Deliver To County (47 Counties)</span>
+              <div className="mx-4 mb-2 p-3 bg-gray-50 dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700/80 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs font-black text-plum dark:text-pink-300">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-plum dark:text-pink-400 shrink-0" />
+                    <span>Delivery Location</span>
+                  </span>
+                  <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded font-bold">47 Counties</span>
                 </div>
                 <div className="relative w-full">
                   <select 
                     value={deliveryLocation}
                     onChange={(e) => onDeliveryLocationChange(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-black text-xs rounded-xl px-3 py-2 outline-none cursor-pointer appearance-none pr-8 shadow-xs"
+                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-black text-xs rounded-lg px-3 py-2 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
                   >
                     {KENYA_COUNTIES.map((c) => (
                       <option key={c.code} value={c.name} className="text-gray-900 dark:text-white bg-white dark:bg-gray-900 font-bold">
@@ -852,34 +926,102 @@ export default function Header({
                 </div>
               </div>
 
+              {/* Language & Currency Selection Card (Mobile Drawer) */}
+              <button 
+                type="button"
+                onClick={() => { setLangModalOpen(true); setMobileMenuOpen(false); }}
+                className="mx-4 mb-2 p-3 bg-gradient-to-r from-plum/10 via-plum/5 to-amber-500/10 dark:from-gray-800/80 dark:to-gray-800 rounded-xl border border-plum/20 dark:border-gray-700 flex items-center justify-between text-left cursor-pointer hover:border-plum transition-all shadow-2xs group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-plum dark:bg-pink-600 text-yellow flex items-center justify-center font-bold shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-plum dark:text-pink-300 group-hover:text-plum-dark">
+                      Language & Currency
+                    </p>
+                    <p className="text-[11px] font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                      <span>{languages.find(l => l.code === selectedLang)?.flag} {languages.find(l => l.code === selectedLang)?.label}</span>
+                      <span>•</span>
+                      <span className="text-amber-600 dark:text-yellow">{CURRENCIES[currentCurrency]?.code} ({CURRENCIES[currentCurrency]?.symbol})</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="px-2.5 py-1 rounded-lg bg-white dark:bg-gray-900 text-plum dark:text-yellow text-[10px] font-black border border-plum/20 shrink-0">
+                  Change
+                </div>
+              </button>
+
+              {/* Core Links */}
               <button 
                 onClick={() => { selectCategory('all'); onViewChange('shop'); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
               >
-                <Store className="w-5 h-5 text-gray-400" />
+                <Store className="w-4.5 h-4.5 text-plum dark:text-pink-400 shrink-0" />
                 <span>Store Home</span>
               </button>
 
               <button 
                 onClick={() => { setMegaMenuOpen(true); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100"
-              >
-                <LayoutGrid className="w-5 h-5 text-gray-400" />
-                <span>Shop All Departments</span>
-              </button>
-              
-              <div className="h-px bg-gray-150 dark:bg-gray-800 my-2 mx-5" />
-              
-              <button 
-                onClick={() => { onToggleWishlist(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between text-gray-800 dark:text-gray-100 cursor-pointer"
               >
                 <span className="flex items-center gap-3">
-                  <Heart className="w-5 h-5 text-gray-400" />
-                  <span>Wishlist</span>
+                  <LayoutGrid className="w-4.5 h-4.5 text-plum dark:text-pink-400 shrink-0" />
+                  <span>Shop All Departments</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </button>
+
+              <div className="h-px bg-gray-150 dark:bg-gray-800 my-1 mx-5" />
+
+              {/* Popular Category Shortcuts */}
+              <div className="px-5 py-1">
+                <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Top Departments</span>
+                <div className="grid grid-cols-2 gap-1.5 mt-2">
+                  <button
+                    onClick={() => { selectCategory('fresh food'); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 hover:border-plum"
+                  >
+                    <span>🍏</span>
+                    <span className="truncate">Fresh Produce</span>
+                  </button>
+                  <button
+                    onClick={() => { selectCategory('liquor'); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-yellow dark:text-yellow border border-gray-200/80 dark:border-gray-700/80 hover:border-yellow"
+                  >
+                    <span>🍷</span>
+                    <span className="truncate">Liquor Cellar</span>
+                  </button>
+                  <button
+                    onClick={() => { selectCategory('food cupboard'); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 hover:border-plum"
+                  >
+                    <span>🛒</span>
+                    <span className="truncate">Food Cupboard</span>
+                  </button>
+                  <button
+                    onClick={() => { selectCategory('electronics'); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 hover:border-plum"
+                  >
+                    <span>⚡</span>
+                    <span className="truncate">Electricals</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="h-px bg-gray-150 dark:bg-gray-800 my-1 mx-5" />
+              
+              {/* User Account / Wishlist / Cart */}
+              <button 
+                onClick={() => { onToggleWishlist(); setMobileMenuOpen(false); }}
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between cursor-pointer"
+              >
+                <span className="flex items-center gap-3">
+                  <Heart className="w-4.5 h-4.5 text-gray-500" />
+                  <span>My Saved Wishlist</span>
                 </span>
                 {wishlistCount > 0 && (
-                  <span className="bg-orange text-white text-[10px] px-2 py-0.5 rounded-full font-black">
+                  <span className="bg-plum text-white text-[10px] px-2 py-0.5 rounded-full font-black">
                     {wishlistCount}
                   </span>
                 )}
@@ -887,11 +1029,11 @@ export default function Header({
 
               <button 
                 onClick={() => { onToggleCart(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between cursor-pointer"
               >
                 <span className="flex items-center gap-3">
-                  <ShoppingCart className="w-5 h-5 text-gray-400" />
-                  <span>Shopping Cart</span>
+                  <ShoppingCart className="w-4.5 h-4.5 text-gray-500" />
+                  <span>My Shopping Cart</span>
                 </span>
                 {cartCount > 0 && (
                   <span className="bg-orange text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
@@ -902,33 +1044,58 @@ export default function Header({
 
               <button 
                 onClick={() => { onToggleUserProfile(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
               >
-                <User className="w-5 h-5 text-gray-400" />
-                <span>My Profile / Track Order</span>
+                <User className="w-4.5 h-4.5 text-gray-500" />
+                <span>Account Profile / Orders</span>
               </button>
 
               <button 
                 onClick={() => { onToggleTheme(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
               >
-                {isDark ? <Sun className="w-5 h-5 text-gray-400" /> : <Moon className="w-5 h-5 text-gray-400" />}
+                {isDark ? <Sun className="w-4.5 h-4.5 text-yellow" /> : <Moon className="w-4.5 h-4.5 text-gray-500" />}
                 <span>{isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}</span>
               </button>
 
-              <div className="h-px bg-gray-150 dark:bg-gray-800 my-2 mx-5" />
+              <div className="h-px bg-gray-150 dark:bg-gray-800 my-1 mx-5" />
 
+              {/* Admin Portal */}
               <button 
                 onClick={() => { onViewChange('admin'); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-200 cursor-pointer"
               >
-                <Lock className="w-5 h-5 text-gray-400" />
-                <span>Admin Panel Portal</span>
+                <Lock className="w-4.5 h-4.5 text-plum dark:text-pink-400" />
+                <span>Admin Management Portal</span>
               </button>
+
+              {/* Store Helpline / Contacts Footer */}
+              <div className="mx-4 mt-3 p-3 bg-plum/5 dark:bg-gray-800/60 rounded-xl border border-plum/10 dark:border-gray-700/60 text-xs">
+                <div className="flex items-center gap-1.5 font-black text-plum dark:text-yellow">
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Kipchimatt Hotline</span>
+                </div>
+                <p className="text-[11px] text-gray-600 dark:text-gray-400 font-bold mt-0.5">{settings.storePhone}</p>
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 dark:text-gray-400">
+                  <ShieldCheck className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                  <span>M-Pesa Express & Card Verified</span>
+                </div>
+              </div>
+
             </div>
           </nav>
         </>
       )}
+
+      {/* Language & Currency Selection Modal */}
+      <LanguageCurrencyModal
+        isOpen={langModalOpen}
+        onClose={() => setLangModalOpen(false)}
+        onChanged={() => {
+          setSelectedLang(getGlobalLang());
+          setCurrentCurrency(getGlobalCurrency());
+        }}
+      />
     </>
   );
 }

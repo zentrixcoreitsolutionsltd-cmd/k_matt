@@ -4,8 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kipchimatt Supermarket | Kenya's Online Grocery & More</title>
+    <script type="text/javascript">
+      (function() {
+        try {
+          var savedLang = localStorage.getItem('kipchimatt_lang');
+          if (savedLang) {
+            document.cookie = 'googtrans=/en/' + savedLang + '; path=/;';
+            document.cookie = 'googtrans=/en/' + savedLang + '; path=/; domain=' + window.location.hostname;
+          }
+        } catch(e) {}
+      })();
+
+      function googleTranslateElementInit() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,sw,fr,de,es,ar,hi,zh-CN',
+            autoDisplay: false
+          }, 'google_translate_element');
+        }
+      }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   </head>
   <body>
+    <div id="google_translate_element" style="display:none;"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

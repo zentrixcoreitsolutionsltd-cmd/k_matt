@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Product, Order, StoreSettings, CartItem, Customer } from './types';
 import { 
-  defaultProducts, defaultSettings, formatMoney, uid 
+  defaultProducts, defaultSettings, formatMoney, uid, getGlobalCurrency 
 } from './data/catalog';
 
 // Components
@@ -63,6 +63,21 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [savedForLater, setSavedForLater] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kipchimatt_saved_for_later');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('kipchimatt_saved_for_later', JSON.stringify(savedForLater));
+    } catch (e) {}
+  }, [savedForLater]);
+
   const [wishlist, setWishlist] = useState<number[]>(() => {
     const saved = localStorage.getItem('kipchimatt_wishlist');
     return saved ? JSON.parse(saved) : [];
@@ -118,6 +133,7 @@ export default function App() {
   const [monochrome, setMonochrome] = useState(false);
   const [accessibilityOpen, setAccessibilityOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [, setCurrencyState] = useState(() => getGlobalCurrency());
 
   // --- Low Stock Urgent Popup State ---
   const [urgentStockProduct, setUrgentStockProduct] = useState<Product | null>(null);
@@ -125,6 +141,10 @@ export default function App() {
 
   // --- Connectivity and Scroll Listeners ---
   useEffect(() => {
+    const handleCurrencyChange = () => setCurrencyState(getGlobalCurrency());
+    window.addEventListener('currency-changed', handleCurrencyChange);
+    window.addEventListener('lang-changed', handleCurrencyChange);
+
     const handleOnline = () => {
       setIsOnline(true);
       setShowOnlineStatusMsg(true);
@@ -144,6 +164,7 @@ export default function App() {
     window.addEventListener('scroll', handleScroll);
 
     return () => {
+      window.removeEventListener('currency-changed', handleCurrencyChange);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('scroll', handleScroll);
@@ -645,12 +666,46 @@ export default function App() {
     showToast('Product removed from shopping basket.', 'info');
   };
 
+  const handleSaveForLater = (id: number) => {
+    const itemToSave = cart.find(item => item.id === id);
+    if (!itemToSave) return;
+    setCart(prev => prev.filter(item => item.id !== id));
+    setSavedForLater(prev => {
+      const existing = prev.find(item => item.id === id);
+      if (existing) {
+        return prev.map(item => item.id === id ? { ...item, qty: item.qty + itemToSave.qty } : item);
+      }
+      return [...prev, itemToSave];
+    });
+    showToast(`Saved "${itemToSave.name}" for later.`, 'info');
+  };
+
+  const handleMoveSavedToCart = (id: number) => {
+    const itemToMove = savedForLater.find(item => item.id === id);
+    if (!itemToMove) return;
+    setSavedForLater(prev => prev.filter(item => item.id !== id));
+    setCart(prev => {
+      const existing = prev.find(item => item.id === id);
+      if (existing) {
+        return prev.map(item => item.id === id ? { ...item, qty: item.qty + itemToMove.qty } : item);
+      }
+      return [...prev, itemToMove];
+    });
+    showToast(`Moved "${itemToMove.name}" back to basket.`, 'success');
+  };
+
+  const handleRemoveSavedItem = (id: number) => {
+    setSavedForLater(prev => prev.filter(item => item.id !== id));
+    showToast('Item removed from Saved list.', 'info');
+  };
+
   const handlePlaceOrder = (
     customerData: Customer, 
     paymentMethod: string, 
     notes?: string,
     extraDetails?: {
       discountAmount?: number;
+      pointsRedeemed?: number;
       couponCode?: string;
       deliveryType?: 'express' | 'pickup';
       pickupBranch?: string;
@@ -669,6 +724,7 @@ export default function App() {
 
     const rawSubtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
     const discount = extraDetails?.discountAmount || 0;
+    const pointsRedeemed = extraDetails?.pointsRedeemed || 0;
     const subtotalAfterDiscount = Math.max(0, rawSubtotal - discount);
     
     const isPickup = extraDetails?.deliveryType === 'pickup';
@@ -683,8 +739,8 @@ export default function App() {
     const customers: Record<string, Customer> = customersJson ? JSON.parse(customersJson) : {};
     const existingCustomer = customers[phoneKey];
     
-    const prevPoints = existingCustomer?.points || 0;
-    const updatedPoints = prevPoints + pointsEarned;
+    const prevPoints = existingCustomer?.points ?? (currentCustomer?.points ?? 120);
+    const updatedPoints = Math.max(0, prevPoints - pointsRedeemed) + pointsEarned;
     
     const updatedCustomer: Customer = {
       ...customerData,
@@ -715,7 +771,7 @@ export default function App() {
       receiptNo: generatedReceiptNo,
       transactionRef: generatedTxnRef,
       discountAmount: discount,
-      couponCode: extraDetails?.couponCode,
+      pointsRedeemed: pointsRedeemed,
       deliveryType: extraDetails?.deliveryType || 'express',
       pickupBranch: extraDetails?.pickupBranch,
       vatAmount: Math.round((finalTotal * 0.16) / 1.16)
@@ -902,6 +958,7 @@ export default function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           orders={orders}
+          currentCustomer={currentCustomer}
         />
       ) : (
         /* Back-Office Operational Console Dashboard */
@@ -1060,9 +1117,13 @@ export default function App() {
         isOpen={cartOpen}
         onClose={() => setCartOpen(false)}
         cart={cart}
+        savedForLater={savedForLater}
         settings={settings}
         onQtyChange={handleQtyChange}
         onRemoveItem={handleRemoveCartItem}
+        onSaveForLater={handleSaveForLater}
+        onMoveToCart={handleMoveSavedToCart}
+        onRemoveSavedItem={handleRemoveSavedItem}
         onCheckout={() => {
           setCartOpen(false);
           setCurrentView('cart');

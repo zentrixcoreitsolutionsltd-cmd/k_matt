@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { 
   X, User, Phone, Mail, MapPin, Award, RotateCcw, ShoppingCart, 
   Crown, Lock, CheckCircle2, Copy, Check, Sparkles, ChevronRight, Zap,
-  Printer, FileText, UserPlus, KeyRound, LogOut, Download, AlertCircle
+  Printer, FileText, UserPlus, KeyRound, LogOut, Download, AlertCircle,
+  History, TrendingUp, TrendingDown, Clock, Calendar, ArrowRight
 } from 'lucide-react';
 import { Customer, Order, CartItem } from '../types';
 import { formatMoney } from '../data/catalog';
@@ -17,7 +18,6 @@ interface LoyaltyTier {
   badgeBg: string;
   textColor: string;
   bgGradient: string;
-  couponCode: string;
   discountDesc: string;
   perks: string[];
 }
@@ -32,8 +32,7 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     badgeBg: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300',
     textColor: 'text-amber-600 dark:text-amber-400',
     bgGradient: 'from-amber-700 to-amber-900',
-    couponCode: 'BRONZE5',
-    discountDesc: '5% Extra Off on all supermarket carts',
+    discountDesc: 'Redeem points directly at checkout (1 Pt = KSh 1)',
     perks: ['Earn 1 point per KSh 100 spent', 'Weekly digital catalog updates']
   },
   {
@@ -45,9 +44,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     badgeBg: 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-400',
     textColor: 'text-slate-500 dark:text-slate-300',
     bgGradient: 'from-slate-600 to-slate-800',
-    couponCode: 'SILVER10',
-    discountDesc: '10% Off on orders above KSh 2,500',
-    perks: ['10% discount coupon unlocked', 'Priority M-PESA payment verification', 'Free express pickup option']
+    discountDesc: 'Redeem points directly on orders + priority verification',
+    perks: ['Priority M-PESA payment verification', 'Free express pickup option']
   },
   {
     id: 'gold',
@@ -58,9 +56,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     badgeBg: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-300 border-yellow-400',
     textColor: 'text-yellow-600 dark:text-amber-300',
     bgGradient: 'from-amber-500 via-yellow-600 to-amber-700',
-    couponCode: 'GOLD15',
-    discountDesc: '15% Off + Express Same-Day Delivery',
-    perks: ['15% discount coupon unlocked', 'Dedicated support helpline', 'Exclusive early flash sale access']
+    discountDesc: 'Redeem points directly + Express Same-Day Delivery',
+    perks: ['Dedicated support helpline', 'Exclusive early flash sale access']
   },
   {
     id: 'platinum',
@@ -71,9 +68,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     badgeBg: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950 dark:text-cyan-200 border-cyan-400',
     textColor: 'text-cyan-500 dark:text-cyan-300',
     bgGradient: 'from-purple-700 via-indigo-700 to-cyan-600',
-    couponCode: 'PLATINUM20',
-    discountDesc: '20% VIP Off on every checkout',
-    perks: ['20% max discount coupon', 'Free delivery on ALL orders', 'Annual birthday voucher & gifts']
+    discountDesc: 'Redeem points on any order + Free delivery on ALL orders',
+    perks: ['Free delivery on ALL orders', 'Annual birthday voucher & bonus points']
   }
 ];
 
@@ -112,10 +108,9 @@ export default function UserProfileModal({
   const [email, setEmail] = useState(customer?.email || '');
   const [address, setAddress] = useState(customer?.address || '');
   const [county, setCounty] = useState(customer?.county || 'Nairobi');
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   
   // Tab and Auth states
-  const [activeTab, setActiveTab] = useState<'profile' | 'loyalty' | 'orders' | 'create_account'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'loyalty' | 'points_history' | 'orders' | 'create_account'>('profile');
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -203,13 +198,6 @@ export default function UserProfileModal({
     setActiveTab('profile');
   };
 
-  const handleCopyCoupon = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    if (onShowToast) onShowToast(`Coupon code "${code}" copied to clipboard!`, 'success');
-    setTimeout(() => setCopiedCode(null), 3000);
-  };
-
   return (
     <div className="fixed inset-0 z-[9990] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-scale-up">
@@ -244,6 +232,13 @@ export default function UserProfileModal({
             <Crown className="w-3.5 h-3.5 text-yellow" />
             <span>Loyalty Tiers</span>
             <span className="bg-plum text-white text-[9px] px-1.5 py-0.2 rounded-full font-extrabold">{points} pts</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('points_history')}
+            className={`pb-2.5 px-2.5 border-b-2 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${activeTab === 'points_history' ? 'border-plum text-plum dark:text-pink-400 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+          >
+            <History className="w-3.5 h-3.5 text-plum" />
+            <span>Points History</span>
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -481,24 +476,10 @@ export default function UserProfileModal({
 
                           {/* Unlock Badge & Action */}
                           {isUnlocked ? (
-                            <button
-                              type="button"
-                              onClick={() => handleCopyCoupon(tier.couponCode)}
-                              className="bg-green/10 hover:bg-green text-green hover:text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 border border-green/30"
-                              title="Copy coupon code"
-                            >
-                              {copiedCode === tier.couponCode ? (
-                                <>
-                                  <Check className="w-3.5 h-3.5" />
-                                  <span>Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3.5 h-3.5" />
-                                  <span>{tier.couponCode}</span>
-                                </>
-                              )}
-                            </button>
+                            <span className="bg-green/10 text-green font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1 border border-green/30">
+                              <CheckCircle2 className="w-3 h-3 text-green" />
+                              <span>Unlocked</span>
+                            </span>
                           ) : (
                             <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1">
                               <Lock className="w-3 h-3" />
@@ -526,6 +507,149 @@ export default function UserProfileModal({
                     );
                   })}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: POINTS HISTORY */}
+          {activeTab === 'points_history' && (
+            <div className="space-y-4">
+              {/* Summary Header */}
+              <div className="bg-gradient-to-r from-plum via-purple-800 to-indigo-900 text-white p-4.5 rounded-2xl shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-yellow animate-pulse" />
+                    <h4 className="font-black text-sm tracking-wide">Loyalty Points Balance</h4>
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${currentTier.badgeBg}`}>
+                      {currentTier.icon} {currentTier.name}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/80 font-medium">
+                    Every 1 Point = KSh 1 discount redeemable optionally at checkout.
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-xs px-4 py-2 rounded-xl border border-white/20 text-center self-stretch sm:self-auto">
+                  <span className="text-[10px] uppercase text-white/70 block font-bold">Available Balance</span>
+                  <span className="text-xl font-black text-yellow">{points} PTS</span>
+                  <span className="text-[10px] font-bold text-white/90 block">(KSh {points} value)</span>
+                </div>
+              </div>
+
+              {/* Points Ledger / Activity Stream */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                    <History className="w-4 h-4 text-plum dark:text-pink-400" />
+                    <span>Points Transaction Ledger</span>
+                  </h4>
+                  <span className="text-[10px] text-gray-500 font-bold">1 Point per KSh 100 spent</span>
+                </div>
+
+                {activeOrders.length === 0 ? (
+                  <div className="space-y-3">
+                    {/* Welcome / Initial Account Bonus row */}
+                    <div className="p-3.5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-green/10 text-green flex items-center justify-center font-black">
+                          <Sparkles className="w-5 h-5 text-green" />
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-xs text-gray-900 dark:text-white">Account Membership Welcome Bonus</h5>
+                          <p className="text-[10px] text-gray-500 font-medium">Initial registration loyalty rewards credit</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="bg-green/10 text-green font-black text-xs px-2.5 py-1 rounded-lg border border-green/30 inline-block">
+                          +{points} PTS
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-center py-6 space-y-1 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
+                      <Clock className="w-8 h-8 text-gray-300 mx-auto" />
+                      <p className="text-xs font-bold text-gray-600 dark:text-gray-300">No order points activity yet</p>
+                      <p className="text-[11px] text-gray-400">Earn +1 point for every KSh 100 spent on upcoming supermarket orders!</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {activeOrders.map((order) => {
+                      const earned = Math.floor(order.total / 100);
+                      const redeemed = order.pointsRedeemed || 0;
+                      const formattedDate = order.date ? new Date(order.date).toLocaleDateString('en-KE', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : 'Recent Order';
+
+                      return (
+                        <div 
+                          key={order.id}
+                          className="p-3.5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs space-y-2 hover:border-plum/40 transition-all"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-xs text-gray-900 dark:text-white">
+                                Order #{order.id.slice(-6).toUpperCase()}
+                              </span>
+                              <span className="text-[10px] text-gray-500 font-medium">({order.items.length} items)</span>
+                            </div>
+                            <span className="text-[10px] text-gray-400 font-medium">{formattedDate}</span>
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-gray-700/60">
+                            <div className="flex items-center gap-2">
+                              {redeemed > 0 && (
+                                <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-extrabold text-[10px] px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+                                  <TrendingDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                                  <span>-{redeemed} PTS Redeemed</span>
+                                </span>
+                              )}
+
+                              <span className="bg-green/10 text-green font-extrabold text-[10px] px-2 py-0.5 rounded-lg border border-green/30 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3 text-green" />
+                                <span>+{earned} PTS Earned</span>
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <span className="font-black text-xs text-gray-900 dark:text-white">
+                                {formatMoney(order.total)}
+                              </span>
+
+                              {onViewReceipt && (
+                                <button
+                                  type="button"
+                                  onClick={() => onViewReceipt(order)}
+                                  className="text-[10px] text-plum dark:text-pink-300 hover:underline font-extrabold flex items-center gap-0.5 cursor-pointer"
+                                >
+                                  <span>Receipt</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Account Creation Welcome Entry */}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-850 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-yellow" />
+                        <div>
+                          <span className="font-bold text-gray-800 dark:text-gray-200">Account Signup Loyalty Credit</span>
+                          <span className="text-[10px] text-gray-500 block font-medium">Initial signup bonus points</span>
+                        </div>
+                      </div>
+                      <span className="bg-green/10 text-green font-extrabold text-[10px] px-2 py-0.5 rounded-md border border-green/30">
+                        +{customer?.points ? Math.min(150, customer.points) : 120} PTS
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

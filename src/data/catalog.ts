@@ -1,11 +1,97 @@
 import { Product, StoreSettings, CategoryMeta } from '../types';
 
+export interface CurrencyInfo {
+  code: string;
+  symbol: string;
+  rate: number; // multiplier relative to base KES
+  flag: string;
+  name: string;
+  decimals: number;
+}
+
+export const CURRENCIES: Record<string, CurrencyInfo> = {
+  KES: { code: 'KES', symbol: 'KSh', rate: 1, flag: '🇰🇪', name: 'Kenyan Shilling', decimals: 0 },
+  USD: { code: 'USD', symbol: '$', rate: 0.0077, flag: '🇺🇸', name: 'US Dollar', decimals: 2 },
+  EUR: { code: 'EUR', symbol: '€', rate: 0.0071, flag: '🇪🇺', name: 'Euro', decimals: 2 },
+  GBP: { code: 'GBP', symbol: '£', rate: 0.0060, flag: '🇬🇧', name: 'British Pound', decimals: 2 },
+  SAR: { code: 'SAR', symbol: '﷼', rate: 0.029, flag: '🇸🇦', name: 'Saudi Riyal', decimals: 2 },
+  INR: { code: 'INR', symbol: '₹', rate: 0.65, flag: '🇮🇳', name: 'Indian Rupee', decimals: 1 },
+  CNY: { code: 'CNY', symbol: '¥', rate: 0.055, flag: '🇨🇳', name: 'Chinese Yuan', decimals: 1 },
+  JPY: { code: 'JPY', symbol: '¥', rate: 1.18, flag: '🇯🇵', name: 'Japanese Yen', decimals: 0 },
+  TZS: { code: 'TZS', symbol: 'TSh', rate: 20.2, flag: '🇹🇿', name: 'Tanzanian Shilling', decimals: 0 },
+  UGX: { code: 'UGX', symbol: 'USh', rate: 28.5, flag: '🇺🇬', name: 'Ugandan Shilling', decimals: 0 },
+  ZAR: { code: 'ZAR', symbol: 'R', rate: 0.14, flag: '🇿🇦', name: 'South African Rand', decimals: 2 },
+};
+
+export const LANG_TO_CURRENCY: Record<string, string> = {
+  en: 'KES',
+  sw: 'KES',
+  fr: 'EUR',
+  de: 'EUR',
+  es: 'EUR',
+  ar: 'SAR',
+  hi: 'INR',
+  'zh-CN': 'CNY',
+  pt: 'EUR',
+  it: 'EUR',
+  ja: 'JPY',
+  nl: 'EUR',
+};
+
+export const CURRENCY_TO_LANG: Record<string, string> = {
+  KES: 'en',
+  USD: 'en',
+  EUR: 'fr',
+  GBP: 'en',
+  SAR: 'ar',
+  INR: 'hi',
+  CNY: 'zh-CN',
+  JPY: 'ja',
+  TZS: 'sw',
+  UGX: 'en',
+  ZAR: 'en',
+};
+
+let currentCurrencyCode: string = (() => {
+  try {
+    return localStorage.getItem('kipchimatt_currency') || 'KES';
+  } catch (e) {
+    return 'KES';
+  }
+})();
+
+export function getGlobalCurrency(): string {
+  return currentCurrencyCode;
+}
+
+export function setGlobalCurrency(code: string) {
+  if (CURRENCIES[code]) {
+    currentCurrencyCode = code;
+    try {
+      localStorage.setItem('kipchimatt_currency', code);
+    } catch (e) {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('currency-changed', { detail: code }));
+    }
+  }
+}
+
 export function uid(): string {
   return Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 }
 
-export function formatMoney(amount: number): string {
-  return `Ksh ${(amount || 0).toLocaleString('en-KE')}`;
+export function formatMoney(amount: number, overrideCode?: string): string {
+  const code = overrideCode || currentCurrencyCode || 'KES';
+  const curr = CURRENCIES[code] || CURRENCIES['KES'];
+  const converted = (amount || 0) * curr.rate;
+
+  if (curr.decimals === 0) {
+    return `${curr.symbol} ${Math.round(converted).toLocaleString()}`;
+  }
+  return `${curr.symbol} ${converted.toLocaleString(undefined, {
+    minimumFractionDigits: curr.decimals,
+    maximumFractionDigits: curr.decimals,
+  })}`;
 }
 
 export function calcDiscount(price: number, originalPrice: number): number {

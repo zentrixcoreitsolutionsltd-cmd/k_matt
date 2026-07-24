@@ -54,6 +54,7 @@ export interface Order {
   receiptNo?: string;
   transactionRef?: string;
   discountAmount?: number;
+  pointsRedeemed?: number;
   couponCode?: string;
   deliveryType?: 'express' | 'pickup';
   pickupBranch?: string;

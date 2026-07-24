@@ -291,11 +291,11 @@ export default function Storefront({
     return (
       <div 
         key={p.id} 
-        className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-150 dark:border-gray-800 hover:border-plum/30 dark:hover:border-pink-500/30 hover:shadow-xl transition-all duration-300 flex flex-col group relative h-full"
+        className="bg-white dark:bg-gray-900 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 hover:border-plum/30 dark:hover:border-pink-500/30 hover:shadow-xl transition-all duration-300 flex flex-col group relative h-full"
       >
         <div 
           onClick={() => onProductClick(p)}
-          className="h-44 sm:h-48 bg-gray-50 dark:bg-gray-850 flex items-center justify-center relative overflow-hidden cursor-pointer shrink-0"
+          className="h-44 sm:h-48 bg-white dark:bg-gray-900 flex items-center justify-center relative overflow-hidden cursor-pointer shrink-0"
         >
           <img 
             src={p.image || 'https://via.placeholder.com/400?text=Kipchimatt'} 
@@ -350,7 +350,7 @@ export default function Storefront({
           </div>
         </div>
 
-        <div className="p-4 flex-1 flex flex-col justify-between">
+        <div className="p-4 flex-1 flex flex-col justify-between bg-white dark:bg-gray-900">
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[10px] text-plum dark:text-pink-400 font-black uppercase tracking-widest truncate">
@@ -675,7 +675,7 @@ export default function Storefront({
               /* PREMIUM SHIMMERING SKELETON UI */
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {Array.from({ length: 10 }).map((_, sIdx) => (
-                  <div key={sIdx} className="bg-white rounded-2xl overflow-hidden border border-gray-150 p-4 space-y-4 animate-pulse">
+                  <div key={sIdx} className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-150 dark:border-gray-800 p-4 space-y-4 animate-pulse">
                     <div className="h-44 bg-gray-100 rounded-xl w-full" />
                     <div className="space-y-2">
                       <div className="h-3 bg-gray-100 rounded w-1/3" />

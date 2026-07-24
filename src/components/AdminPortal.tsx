@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Laptop, Lock, LogOut, Package, ShoppingBag, Settings, AlertTriangle, 
-  Plus, Edit, Trash2, Check, RefreshCw, Mail, Search, DollarSign 
+  Plus, Edit, Trash2, Check, RefreshCw, Mail, Search, DollarSign,
+  TrendingDown, Clock, Calendar, AlertCircle, ShieldAlert, Sparkles, TrendingUp, CheckCircle2, ArrowRight
 } from 'lucide-react';
 import { Product, Order, StoreSettings } from '../types';
 import { formatMoney, uid, defaultProducts } from '../data/catalog';
@@ -36,8 +37,12 @@ export default function AdminPortal({
   onTriggerLowStockEmail
 }: AdminPortalProps) {
   const [password, setPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'settings' | 'alerts'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'forecast' | 'settings' | 'alerts'>('products');
   
+  // Forecast State
+  const [forecastFilter, setForecastFilter] = useState<'all' | 'critical' | 'out_of_stock' | 'high_velocity'>('all');
+  const [forecastSearch, setForecastSearch] = useState('');
+
   // Product Edit State
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -58,6 +63,78 @@ export default function AdminPortal({
   const [storeEmail, setStoreEmail] = useState(settings.storeEmail);
   const [deliveryFee, setDeliveryFee] = useState(settings.deliveryFee);
   const [freeThreshold, setFreeThreshold] = useState(settings.freeDeliveryThreshold);
+
+  // Stock Forecast Engine: 30-day sales data analysis
+  const now = Date.now();
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+  
+  // Aggregate 30-day quantity sold per product ID
+  const salesIn30DaysMap: Record<number, number> = {};
+  orders.forEach(order => {
+    if (order.status === 'cancelled') return;
+    const orderTime = order.date ? new Date(order.date).getTime() : now;
+    if (now - orderTime <= thirtyDaysMs || orders.length <= 10) {
+      order.items.forEach(item => {
+        salesIn30DaysMap[item.id] = (salesIn30DaysMap[item.id] || 0) + item.qty;
+      });
+    }
+  });
+
+  const forecastedProducts = products.map(product => {
+    const sales30Days = salesIn30DaysMap[product.id] || 0;
+    const dailySalesRate = sales30Days / 30; // units per day
+    let daysRemaining = Infinity;
+
+    if (product.stock === 0) {
+      daysRemaining = 0;
+    } else if (dailySalesRate > 0) {
+      daysRemaining = product.stock / dailySalesRate;
+    }
+
+    const hitsZeroWithinWeek = daysRemaining <= 7;
+    const recommendedRestock = Math.max(0, Math.ceil(dailySalesRate * 30 - product.stock));
+
+    return {
+      ...product,
+      sales30Days,
+      dailySalesRate,
+      daysRemaining,
+      hitsZeroWithinWeek,
+      recommendedRestock
+    };
+  });
+
+  const atRiskProductsCount = forecastedProducts.filter(p => p.daysRemaining <= 7).length;
+  const outOfStockCount = forecastedProducts.filter(p => p.stock === 0).length;
+  const total30DaySalesUnits = Object.values(salesIn30DaysMap).reduce((a, b) => a + b, 0);
+  const totalReorderUnitsNeeded = forecastedProducts.reduce((sum, p) => sum + (p.recommendedRestock > 0 ? p.recommendedRestock : 0), 0);
+
+  const filteredForecast = forecastedProducts.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(forecastSearch.toLowerCase()) || 
+                          p.category.toLowerCase().includes(forecastSearch.toLowerCase());
+    
+    if (!matchesSearch) return false;
+
+    if (forecastFilter === 'critical') {
+      return p.daysRemaining <= 7;
+    }
+    if (forecastFilter === 'out_of_stock') {
+      return p.stock === 0;
+    }
+    if (forecastFilter === 'high_velocity') {
+      return p.dailySalesRate >= 0.3 || p.sales30Days >= 3;
+    }
+
+    return true;
+  });
+
+  const handleRestockProduct = (productId: number, qtyToAdd: number) => {
+    const target = products.find(p => p.id === productId);
+    if (!target) return;
+    const updated = products.map(p => p.id === productId ? { ...p, stock: p.stock + qtyToAdd } : p);
+    onProductsChange(updated);
+    onShowToast(`Restocked "${target.name}" (+${qtyToAdd} units). New stock: ${target.stock + qtyToAdd}`, 'success');
+  };
 
   if (!isLoggedIn) {
     return (
@@ -200,24 +277,36 @@ export default function AdminPortal({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 gap-2 text-xs font-extrabold">
+      <div className="flex border-b border-gray-200 dark:border-gray-800 gap-2 text-xs font-extrabold overflow-x-auto pb-1">
         <button 
           onClick={() => setActiveTab('products')}
-          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'products' ? 'border-plum text-plum' : 'border-transparent text-gray-500'}`}
+          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 ${activeTab === 'products' ? 'border-plum text-plum' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
         >
           <Package className="w-4 h-4" />
           <span>Products ({products.length})</span>
         </button>
         <button 
           onClick={() => setActiveTab('orders')}
-          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'orders' ? 'border-plum text-plum' : 'border-transparent text-gray-500'}`}
+          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 ${activeTab === 'orders' ? 'border-plum text-plum' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
         >
           <ShoppingBag className="w-4 h-4" />
           <span>Orders ({orders.length})</span>
         </button>
         <button 
+          onClick={() => setActiveTab('forecast')}
+          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 ${activeTab === 'forecast' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+        >
+          <TrendingDown className="w-4 h-4 text-amber-500" />
+          <span>Stock Forecast</span>
+          {atRiskProductsCount > 0 && (
+            <span className="bg-red text-white text-[10px] px-1.5 py-0.2 rounded-full font-black animate-pulse">
+              {atRiskProductsCount}
+            </span>
+          )}
+        </button>
+        <button 
           onClick={() => setActiveTab('settings')}
-          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === 'settings' ? 'border-plum text-plum' : 'border-transparent text-gray-500'}`}
+          className={`pb-3 px-4 flex items-center gap-2 border-b-2 transition-colors cursor-pointer shrink-0 ${activeTab === 'settings' ? 'border-plum text-plum' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
         >
           <Settings className="w-4 h-4" />
           <span>Store Settings</span>
@@ -395,6 +484,256 @@ export default function AdminPortal({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tab: Stock Forecast */}
+      {activeTab === 'forecast' && (
+        <div className="space-y-6">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-plum via-purple-900 to-indigo-950 text-white p-6 rounded-3xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-yellow/20 text-yellow rounded-xl">
+                  <TrendingDown className="w-5 h-5" />
+                </span>
+                <h2 className="text-lg font-black tracking-wide">30-Day Sales Velocity & Stockout Predictor</h2>
+              </div>
+              <p className="text-xs text-white/80 max-w-2xl leading-relaxed">
+                Analyzes actual 30-day sales history across all customer orders to compute daily burn rates and accurately predict which catalog items will hit zero stock within the next week (7 days).
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-xs bg-white/10 backdrop-blur-xs px-3.5 py-2 rounded-2xl border border-white/20 font-bold text-yellow flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-yellow" />
+                <span>Predictive Engine Active</span>
+              </span>
+            </div>
+          </div>
+
+          {/* KPI Analytics Overview */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-4.5 rounded-2xl shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-extrabold">
+                <span>At Risk (≤ 7 Days)</span>
+                <ShieldAlert className="w-4 h-4 text-red" />
+              </div>
+              <div className="text-2xl font-black text-red">
+                {atRiskProductsCount}
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">Will hit 0 stock within 1 week</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-4.5 rounded-2xl shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-extrabold">
+                <span>Out of Stock</span>
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="text-2xl font-black text-amber-500">
+                {outOfStockCount}
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">0 units remaining now</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-4.5 rounded-2xl shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-extrabold">
+                <span>30-Day Sales Volume</span>
+                <TrendingUp className="w-4 h-4 text-green" />
+              </div>
+              <div className="text-2xl font-black text-gray-900 dark:text-white">
+                {total30DaySalesUnits} <span className="text-xs font-normal text-gray-500">units</span>
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">From {orders.length} orders placed</p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-4.5 rounded-2xl shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-extrabold">
+                <span>Total Reorder Needed</span>
+                <Package className="w-4 h-4 text-plum dark:text-pink-400" />
+              </div>
+              <div className="text-2xl font-black text-plum dark:text-pink-400">
+                {totalReorderUnitsNeeded} <span className="text-xs font-normal text-gray-500">units</span>
+              </div>
+              <p className="text-[10px] text-gray-400 font-medium">To cover 30-day sales buffer</p>
+            </div>
+          </div>
+
+          {/* Filter & Search Toolbar */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 p-4 rounded-2xl shadow-xs flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+              <button
+                type="button"
+                onClick={() => setForecastFilter('all')}
+                className={`px-3 py-1.5 rounded-xl font-extrabold transition-all cursor-pointer whitespace-nowrap ${forecastFilter === 'all' ? 'bg-plum text-white shadow-xs' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}
+              >
+                All Catalog ({forecastedProducts.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setForecastFilter('critical')}
+                className={`px-3 py-1.5 rounded-xl font-extrabold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${forecastFilter === 'critical' ? 'bg-red text-white shadow-xs' : 'bg-red/10 text-red dark:bg-red/20'}`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>Stockout ≤ 7 Days ({atRiskProductsCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForecastFilter('out_of_stock')}
+                className={`px-3 py-1.5 rounded-xl font-extrabold transition-all cursor-pointer whitespace-nowrap ${forecastFilter === 'out_of_stock' ? 'bg-amber-500 text-white shadow-xs' : 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'}`}
+              >
+                Out of Stock ({outOfStockCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setForecastFilter('high_velocity')}
+                className={`px-3 py-1.5 rounded-xl font-extrabold transition-all cursor-pointer whitespace-nowrap ${forecastFilter === 'high_velocity' ? 'bg-purple-600 text-white shadow-xs' : 'bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300'}`}
+              >
+                High Sales Rate
+              </button>
+            </div>
+
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search products or category..."
+                value={forecastSearch}
+                onChange={e => setForecastSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 outline-none focus:border-plum font-medium"
+              />
+            </div>
+          </div>
+
+          {/* Forecasted Products Table */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 font-extrabold uppercase tracking-wider">
+                    <th className="py-3.5 px-4">Product Details</th>
+                    <th className="py-3.5 px-4">Current Stock</th>
+                    <th className="py-3.5 px-4">30-Day Sales</th>
+                    <th className="py-3.5 px-4">Daily Sales Velocity</th>
+                    <th className="py-3.5 px-4">Forecasted Stockout Date</th>
+                    <th className="py-3.5 px-4">Risk Level</th>
+                    <th className="py-3.5 px-4 text-right">Quick Restock</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                  {filteredForecast.map((item) => {
+                    const days = item.daysRemaining;
+                    const isCritical = days <= 7;
+                    const isZero = item.stock === 0;
+
+                    let predictedText = 'Safe (>15 Days)';
+                    if (isZero) {
+                      predictedText = 'Out of Stock Now';
+                    } else if (days <= 30) {
+                      const zeroDate = new Date(Date.now() + days * 86400000);
+                      predictedText = `${days.toFixed(1)} days (${zeroDate.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })})`;
+                    }
+
+                    return (
+                      <tr key={item.id} className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/50 transition-colors ${isCritical ? 'bg-red-50/30 dark:bg-red-950/10' : ''}`}>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-xl border border-gray-200 dark:border-gray-700 bg-white shrink-0" />
+                            <div>
+                              <div className="font-bold text-gray-900 dark:text-white line-clamp-1">{item.name}</div>
+                              <div className="text-[10px] text-gray-400 capitalize">{item.category} • {formatMoney(item.price)}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <span className={`font-extrabold px-2.5 py-1 rounded-lg border text-xs inline-block ${item.stock === 0 ? 'bg-red-100 text-red border-red-300 dark:bg-red-950 dark:text-red-300' : (item.stock <= 10 ? 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300' : 'bg-green/10 text-green border-green/30')}`}>
+                            {item.stock} units
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-4 font-bold text-gray-800 dark:text-gray-200">
+                          {item.sales30Days} units sold
+                        </td>
+
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-300 font-extrabold">
+                          {item.dailySalesRate.toFixed(2)} units/day
+                        </td>
+
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-gray-100">
+                            <Clock className={`w-3.5 h-3.5 ${isCritical ? 'text-red animate-pulse' : 'text-gray-400'}`} />
+                            <span className={isCritical ? 'text-red font-black' : ''}>{predictedText}</span>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-4">
+                          {isZero ? (
+                            <span className="bg-red text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 w-fit shadow-2xs">
+                              <AlertCircle className="w-3 h-3" />
+                              <span>STOCKOUT</span>
+                            </span>
+                          ) : isCritical ? (
+                            <span className="bg-red/15 text-red dark:bg-red-950/80 dark:text-red-300 border border-red-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">
+                              <ShieldAlert className="w-3 h-3 text-red" />
+                              <span>ZERO IN ≤7 DAYS</span>
+                            </span>
+                          ) : days <= 14 ? (
+                            <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 text-[10px] font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">
+                              <Clock className="w-3 h-3" />
+                              <span>DEPLETES IN 1-2 WKS</span>
+                            </span>
+                          ) : (
+                            <span className="bg-green/10 text-green border border-green/30 text-[10px] font-extrabold px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>HEALTHY STOCK</span>
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleRestockProduct(item.id, 10)}
+                              className="bg-plum hover:bg-plum-dark text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95"
+                              title="Restock +10 units"
+                            >
+                              +10
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRestockProduct(item.id, 25)}
+                              className="bg-purple-800 hover:bg-purple-900 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95"
+                              title="Restock +25 units"
+                            >
+                              +25
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRestockProduct(item.id, 50)}
+                              className="bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95"
+                              title="Restock +50 units"
+                            >
+                              +50
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {filteredForecast.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-gray-500 font-bold">
+                        No products match the selected stock forecast filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 

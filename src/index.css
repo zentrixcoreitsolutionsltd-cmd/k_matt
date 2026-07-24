@@ -86,3 +86,17 @@ body.high-contrast.dark .text-gray-300,
 .dark body.high-contrast .text-gray-300 {
   color: #f5f5f5 !important;
 }
+
+/* Google Translate Frame & Banner Cleanups */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+.goog-te-gadget {
+  font-size: 0px !important;
+}
+#google_translate_element {
+  display: none !important;
+}
