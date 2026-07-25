@@ -96,7 +96,7 @@ export default function Hero({ onExploreCategory, onScrollToDeals, onScrollToBra
       <div className="absolute -bottom-28 -right-28 w-96 h-96 bg-[#942352] rounded-full blur-3xl opacity-40 pointer-events-none" />
       <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 md:py-10">
+      <div className="relative w-full max-w-full px-2 sm:px-4 lg:px-6 py-5 sm:py-8 md:py-10">
         
         {/* Main Hero Grid */}
         <div className="grid grid-cols-12 gap-2 sm:gap-4 md:gap-8 items-center">

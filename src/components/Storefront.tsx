@@ -299,7 +299,7 @@ export default function Storefront({
           className="h-44 sm:h-48 bg-white dark:bg-gray-900 flex items-center justify-center relative overflow-hidden cursor-pointer shrink-0"
         >
           <img 
-            src={p.image || 'https://via.placeholder.com/400?text=Kipchimatt'} 
+            src={p.image || 'https://via.placeholder.com/400?text=K-Matt'} 
             alt={p.name}
             loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -355,7 +355,7 @@ export default function Storefront({
           <div>
             <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[10px] text-plum dark:text-pink-400 font-black uppercase tracking-widest truncate">
-                {p.brand || 'Kipchimatt'}
+                {p.brand || 'K-Matt'}
               </span>
               {p.rating && (
                 <div className="flex items-center gap-0.5 text-xs text-plum dark:text-pink-400 font-bold" title={`${p.rating} / 5 Customer Rating`}>
@@ -543,7 +543,7 @@ export default function Storefront({
 
   return (
     <div className="pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-full px-2 sm:px-4 lg:px-6">
         
         {loading ? (
           /* PREMIUM SHIMMERING SKELETON UI FOR BOTH HOME AND FILTER VIEW */
@@ -724,7 +724,7 @@ export default function Storefront({
                       </span>
                     </h2>
                     <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                      Explore departments with premium Kipchimatt quality
+                      Explore departments with premium K-Matt quality
                     </p>
                   </div>
                 </div>
@@ -1097,7 +1097,7 @@ export default function Storefront({
                       </span>
                     </h2>
                     <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
-                      Explore top local & international brands available at Kipchimatt
+                      Explore top local & international brands available at K-Matt
                     </p>
                   </div>
                 </div>

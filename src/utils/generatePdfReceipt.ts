@@ -9,7 +9,7 @@ export function generatePdfReceipt(order: Order, settings: StoreSettings): void 
     format: 'a4'
   });
 
-  const receiptNo = order.receiptNo || `KIP-REC-${order.id.slice(-6).toUpperCase()}`;
+  const receiptNo = order.receiptNo || `KM-REC-${order.id.slice(-6).toUpperCase()}`;
   const txnRef = order.transactionRef || `MP-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
   const vatAmount = order.vatAmount || Math.round((order.total * 0.16) / 1.16);
 
@@ -21,7 +21,7 @@ export function generatePdfReceipt(order: Order, settings: StoreSettings): void 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
-  doc.text('KIPCHIMATT SUPERMARKET', 15, 17);
+  doc.text('K-MATT SUPERMARKET', 15, 17);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -38,7 +38,7 @@ export function generatePdfReceipt(order: Order, settings: StoreSettings): void 
   doc.setFont('helvetica', 'bold');
   let y = 40;
 
-  doc.text('Kipchimatt Supermarkets Ltd', 15, y);
+  doc.text('K-Matt Supermarkets Ltd', 15, y);
   doc.setFont('helvetica', 'normal');
   doc.text(`Head Office: Koinange Street, Nairobi | Tel: ${settings.storePhone}`, 15, y + 5);
   doc.text(`KRA PIN: P051928374Z | ETR Serial No: KRA-2026-99210`, 15, y + 10);
@@ -187,9 +187,9 @@ export function generatePdfReceipt(order: Order, settings: StoreSettings): void 
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 120);
-  doc.text('Thank you for shopping with Kipchimatt Supermarkets!', 105, y, { align: 'center' });
+  doc.text('Thank you for shopping with K-Matt Supermarkets!', 105, y, { align: 'center' });
   doc.text('Goods in sound condition returnable within 7 days with this official receipt.', 105, y + 4, { align: 'center' });
 
   // Save the PDF
-  doc.save(`Kipchimatt_Receipt_${receiptNo}.pdf`);
+  doc.save(`KMatt_Receipt_${receiptNo}.pdf`);
 }

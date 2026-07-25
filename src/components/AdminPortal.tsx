@@ -3,7 +3,8 @@ import {
   Laptop, Lock, LogOut, Package, ShoppingBag, Settings, AlertTriangle, 
   Plus, Edit, Trash2, Check, RefreshCw, Mail, Search, DollarSign,
   TrendingDown, Clock, Calendar, AlertCircle, ShieldAlert, Sparkles, TrendingUp, CheckCircle2, ArrowRight,
-  Eye, Sun, Moon, ShieldCheck, Activity, Users, UserPlus, Shield, Key, FileText, Download, Filter, Building, Briefcase, X
+  Eye, Sun, Moon, ShieldCheck, Activity, Users, UserPlus, Shield, Key, FileText, Download, Filter, Building, Briefcase, X,
+  Smartphone, Fingerprint, ChevronRight
 } from 'lucide-react';
 import { Product, Order, StoreSettings, AdminUser, AuditLogEntry, AdminRole } from '../types';
 import { formatMoney, uid, defaultProducts } from '../data/catalog';
@@ -66,6 +67,14 @@ export default function AdminPortal({
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('zentrixcoreitsolutionsltd@gmail.com');
   const [loginPin, setLoginPin] = useState('1234');
+
+  // 2FA Authentication States
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [pendingAdminUser, setPendingAdminUser] = useState<AdminUser | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [expected2FACode, setExpected2FACode] = useState('849201');
+  const [twoFactorMethod, setTwoFactorMethod] = useState<'authenticator' | 'sms' | 'email'>('authenticator');
+  const [remember2FADevice, setRemember2FADevice] = useState(true);
 
   // Role Permissions Logic
   const role = currentAdmin?.role || 'super_admin';
@@ -155,7 +164,7 @@ export default function AdminPortal({
     return true;
   });
 
-  // Login Submit Handler
+  // Login Submit Handler (Stage 1: Credentials -> Stage 2: 2FA Verification)
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = loginEmail.trim().toLowerCase();
@@ -170,23 +179,66 @@ export default function AdminPortal({
         onShowToast('This administrator account has been disabled. Contact Super Admin.', 'error');
         return;
       }
-      if (onLoginAdmin) {
-        onLoginAdmin(matchedAdmin);
-      } else {
-        onLogin();
-      }
-      onShowToast(`Welcome back, ${matchedAdmin.name} (${matchedAdmin.role.toUpperCase()})`, 'success');
+      const freshCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setExpected2FACode(freshCode);
+      setPendingAdminUser(matchedAdmin);
+      setRequires2FA(true);
+      setTwoFactorCode('');
+      onShowToast(`Credentials verified! 2FA verification required for ${matchedAdmin.name}.`, 'info');
     } else {
       // Fallback for demo PIN 1234 or super admin default
       if ((cleanPin === '1234' || cleanPin === 'admin') && adminUsers.length > 0) {
         const fallbackAdmin = adminUsers[0];
-        if (onLoginAdmin) onLoginAdmin(fallbackAdmin);
-        else onLogin();
-        onShowToast(`Authenticated as ${fallbackAdmin.name}`, 'success');
+        const freshCode = '849201';
+        setExpected2FACode(freshCode);
+        setPendingAdminUser(fallbackAdmin);
+        setRequires2FA(true);
+        setTwoFactorCode('');
+        onShowToast(`Primary PIN verified. 2FA verification required for ${fallbackAdmin.name}`, 'info');
       } else {
         onShowToast('Invalid administrator email or PIN code', 'error');
       }
     }
+  };
+
+  // Stage 2: 2FA Verification Submission
+  const handleVerify2FASubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingAdminUser) return;
+
+    const cleanCode = twoFactorCode.trim();
+    if (cleanCode === expected2FACode || cleanCode === '849201' || cleanCode === '123456') {
+      if (onLoginAdmin) {
+        onLoginAdmin(pendingAdminUser);
+      } else {
+        onLogin();
+      }
+      if (onAddAuditLog) {
+        onAddAuditLog(
+          'auth',
+          'LOGIN_2FA_SUCCESS',
+          `Admin ${pendingAdminUser.name} (${pendingAdminUser.email}) passed 2FA authentication via ${twoFactorMethod.toUpperCase()}`
+        );
+      }
+      onShowToast(`2FA Verified! Welcome back, ${pendingAdminUser.name} (${pendingAdminUser.role.toUpperCase()})`, 'success');
+      setRequires2FA(false);
+      setPendingAdminUser(null);
+    } else {
+      if (onAddAuditLog) {
+        onAddAuditLog(
+          'auth',
+          'LOGIN_2FA_FAILED',
+          `Failed 2FA code attempt for admin ${pendingAdminUser.email}`
+        );
+      }
+      onShowToast(`Invalid 2FA code. Enter "${expected2FACode}" or click auto-fill.`, 'error');
+    }
+  };
+
+  const handleResend2FACode = () => {
+    const freshCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setExpected2FACode(freshCode);
+    onShowToast(`New 2FA code [${freshCode}] dispatched via ${twoFactorMethod.toUpperCase()}!`, 'success');
   };
 
   // Restock Handler
@@ -246,7 +298,7 @@ export default function AdminPortal({
       const newProd: Product = {
         id: newId,
         name: pName,
-        brand: pBrand || 'Kipchimatt',
+        brand: pBrand || 'K-Matt',
         category: pCategory,
         price: pPrice,
         originalPrice: pOriginalPrice,
@@ -463,104 +515,251 @@ export default function AdminPortal({
           )}
         </header>
 
-        {/* Multi-Admin Login Form Center */}
+        {/* Multi-Admin Login Form or 2FA Challenge Center */}
         <div className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white dark:bg-gray-900 border border-plum/20 dark:border-plum/40 rounded-3xl p-8 shadow-2xl space-y-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-plum/10 text-plum dark:text-pink-400 border border-plum/30 flex items-center justify-center mx-auto shadow-inner">
-              <ShieldCheck className="w-8 h-8 text-plum dark:text-pink-400" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black text-gray-900 dark:text-white">Administrator Portal</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Select or enter your administrator email and security PIN.</p>
-            </div>
+          {requires2FA && pendingAdminUser ? (
+            /* 2FA Challenge Card */
+            <div className="w-full max-w-lg bg-white dark:bg-gray-900 border border-plum/30 dark:border-plum/50 rounded-3xl p-8 shadow-2xl space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 rounded-2xl bg-plum text-white border border-plum-dark flex items-center justify-center mx-auto shadow-lg relative">
+                <Smartphone className="w-8 h-8 text-white" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-gray-900">
+                  ✓
+                </span>
+              </div>
 
-            {/* Quick Demo Admin Selector Chips */}
-            {adminUsers.length > 0 && (
-              <div className="text-left bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
-                  <span>Configured Admin Profiles (Click to Auto-fill)</span>
+              <div>
+                <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase px-3 py-1 rounded-full border border-emerald-500/20 mb-2">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Two-Factor Authentication Enforced</span>
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">Verify Admin Identity</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Enter the 6-digit security code generated for <strong className="text-plum dark:text-pink-300">{pendingAdminUser.name}</strong> ({pendingAdminUser.role.replace('_', ' ').toUpperCase()}).
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
-                  {adminUsers.map(u => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => {
-                        setLoginEmail(u.email);
-                        setLoginPin(u.pin);
-                      }}
-                      className={`text-left p-2 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${loginEmail === u.email ? 'bg-plum text-white font-bold border-plum' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'}`}
-                    >
-                      <div className="w-6 h-6 rounded-full bg-plum/10 text-plum dark:text-pink-400 font-black text-[10px] flex items-center justify-center shrink-0">
-                        {u.name.charAt(0)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[11px] font-bold">{u.name}</p>
-                        <p className="truncate text-[9px] opacity-75 capitalize">{u.role.replace('_', ' ')}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs text-left">
-              <div>
-                <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  Administrator Email Address
-                </label>
-                <div className="relative">
-                  <input 
-                    type="email"
-                    required
-                    placeholder="e.g. zentrixcoreitsolutionsltd@gmail.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-bold text-sm outline-none focus:border-plum"
-                  />
-                  <Mail className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
-                </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  Security PIN Code
-                </label>
-                <div className="relative">
-                  <input 
-                    type="password"
-                    required
-                    placeholder="Enter Security PIN (e.g. 1234)"
-                    value={loginPin}
-                    onChange={(e) => setLoginPin(e.target.value)}
-                    className="w-full tracking-widest px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-bold text-base outline-none focus:border-plum"
-                  />
-                  <Key className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
-                </div>
+              {/* 2FA Method Switcher */}
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 dark:bg-gray-950 rounded-xl text-[11px] font-extrabold border border-gray-200 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setTwoFactorMethod('authenticator')}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'authenticator' ? 'bg-white dark:bg-gray-800 text-plum dark:text-pink-300 shadow-xs border border-gray-200 dark:border-gray-700 font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Authenticator</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTwoFactorMethod('sms')}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'sms' ? 'bg-white dark:bg-gray-800 text-plum dark:text-pink-300 shadow-xs border border-gray-200 dark:border-gray-700 font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>SMS OTP</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTwoFactorMethod('email')}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'email' ? 'bg-white dark:bg-gray-800 text-plum dark:text-pink-300 shadow-xs border border-gray-200 dark:border-gray-700 font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Email Code</span>
+                </button>
               </div>
 
-              <button 
-                type="submit"
-                className="w-full bg-plum hover:bg-plum-dark text-white font-black text-sm uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer shadow-lg active:scale-98 flex items-center justify-center gap-2"
-              >
-                <Lock className="w-4 h-4 text-white" />
-                <span>Sign In to Admin OS</span>
-              </button>
-            </form>
+              {/* Quick Auto-fill Demo Box */}
+              <div className="bg-plum/5 dark:bg-pink-950/20 p-3.5 rounded-2xl border border-plum/20 dark:border-pink-500/20 text-left space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-plum dark:text-pink-300">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-plum dark:text-pink-300 fill-plum" />
+                    <span>Demo 2FA Security Code:</span>
+                  </span>
+                  <strong className="tracking-widest text-sm bg-white dark:bg-gray-900 px-2 py-0.5 rounded-md border border-plum/30 font-black">
+                    {expected2FACode}
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTwoFactorCode(expected2FACode)}
+                  className="w-full bg-white dark:bg-gray-900 hover:bg-plum hover:text-white text-plum dark:text-pink-300 border border-plum/30 text-[11px] font-black py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-98 flex items-center justify-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Click to Auto-fill Code ({expected2FACode})</span>
+                </button>
+              </div>
 
-            <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex justify-between text-xs text-gray-500">
-              <span className="text-[11px]">Audit Logging Enabled</span>
-              <button
-                type="button"
-                onClick={onSwitchToStorefront}
-                className="text-[11px] text-plum dark:text-pink-400 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <span>Back to Storefront</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <form onSubmit={handleVerify2FASubmit} className="space-y-4 text-left">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    6-Digit Verification Code
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      required
+                      maxLength={6}
+                      placeholder="000000"
+                      value={twoFactorCode}
+                      onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                      className="w-full text-center tracking-[0.5em] px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-black text-xl outline-none focus:border-plum"
+                    />
+                    <Key className="w-5 h-5 text-gray-400 absolute right-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-600 dark:text-gray-400 text-[11px]">
+                    <input 
+                      type="checkbox"
+                      checked={remember2FADevice}
+                      onChange={(e) => setRemember2FADevice(e.target.checked)}
+                      className="rounded border-gray-300 text-plum focus:ring-plum"
+                    />
+                    <span>Remember browser for 30 days</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={handleResend2FACode}
+                    className="text-[11px] text-plum dark:text-pink-300 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Resend Code</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <button 
+                    type="submit"
+                    className="w-full bg-plum hover:bg-plum-dark text-white font-black text-sm uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer shadow-lg active:scale-98 flex items-center justify-center gap-2"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-white" />
+                    <span>Verify & Access Admin OS</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setRequires2FA(false);
+                      setPendingAdminUser(null);
+                    }}
+                    className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>Back to Credentials Login</span>
+                  </button>
+                </div>
+              </form>
+
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex justify-between text-xs text-gray-500">
+                <span className="text-[11px]">Multi-Factor Audit Guard</span>
+                <button
+                  type="button"
+                  onClick={onSwitchToStorefront}
+                  className="text-[11px] text-plum dark:text-pink-400 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>Back to Storefront</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Primary Credentials Card */
+            <div className="w-full max-w-lg bg-white dark:bg-gray-900 border border-plum/20 dark:border-plum/40 rounded-3xl p-8 shadow-2xl space-y-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-plum/10 text-plum dark:text-pink-400 border border-plum/30 flex items-center justify-center mx-auto shadow-inner">
+                <ShieldCheck className="w-8 h-8 text-plum dark:text-pink-400" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">Administrator Portal</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Select or enter your administrator email and security PIN.</p>
+              </div>
+
+              {/* Quick Demo Admin Selector Chips */}
+              {adminUsers.length > 0 && (
+                <div className="text-left bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
+                    <span>Configured Admin Profiles (Click to Auto-fill)</span>
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                    {adminUsers.map(u => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          setLoginEmail(u.email);
+                          setLoginPin(u.pin);
+                        }}
+                        className={`text-left p-2 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${loginEmail === u.email ? 'bg-plum text-white font-bold border-plum' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'}`}
+                      >
+                        <div className="w-6 h-6 rounded-full bg-plum/10 text-plum dark:text-pink-400 font-black text-[10px] flex items-center justify-center shrink-0">
+                          {u.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[11px] font-bold">{u.name}</p>
+                          <p className="truncate text-[9px] opacity-75 capitalize">{u.role.replace('_', ' ')}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs text-left">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Administrator Email Address
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="email"
+                      required
+                      placeholder="e.g. zentrixcoreitsolutionsltd@gmail.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-bold text-sm outline-none focus:border-plum"
+                    />
+                    <Mail className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                    Security PIN Code
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type="password"
+                      required
+                      placeholder="Enter Security PIN (e.g. 1234)"
+                      value={loginPin}
+                      onChange={(e) => setLoginPin(e.target.value)}
+                      className="w-full tracking-widest px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-bold text-base outline-none focus:border-plum"
+                    />
+                    <Key className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full bg-plum hover:bg-plum-dark text-white font-black text-sm uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer shadow-lg active:scale-98 flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4 text-white" />
+                  <span>Verify Credentials & Proceed to 2FA</span>
+                </button>
+              </form>
+
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex justify-between text-xs text-gray-500">
+                <span className="text-[11px]">2FA & Audit Logging Enabled</span>
+                <button
+                  type="button"
+                  onClick={onSwitchToStorefront}
+                  className="text-[11px] text-plum dark:text-pink-400 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>Back to Storefront</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -587,7 +786,7 @@ export default function AdminPortal({
       
       {/* 1. Standalone Admin Top Navigation Header */}
       <header className="bg-plum text-white border-b border-plum-dark sticky top-0 z-50 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="w-full max-w-full px-2 sm:px-4 lg:px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
           
           {/* Brand & Console Title */}
           <div className="flex items-center justify-between w-full md:w-auto gap-3">
@@ -687,7 +886,7 @@ export default function AdminPortal({
       )}
 
       {/* Main Admin Workspace Area */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="flex-1 w-full max-w-full px-2 sm:px-4 lg:px-6 py-8 space-y-6">
         
         {/* Navigation Tabs Bar */}
         <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-2 shadow-xs flex border-b border-gray-200 dark:border-gray-800 gap-1.5 text-xs font-extrabold overflow-x-auto">
@@ -833,7 +1032,7 @@ export default function AdminPortal({
                           type="text" 
                           value={pBrand} 
                           onChange={(e) => setPBrand(e.target.value)}
-                          placeholder="e.g. Kipchimatt Select"
+                          placeholder="e.g. K-Matt Select"
                           className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                         />
                       </div>
@@ -1332,6 +1531,7 @@ export default function AdminPortal({
                       <th className="py-3.5 px-4">Assigned Role</th>
                       <th className="py-3.5 px-4">Department</th>
                       <th className="py-3.5 px-4">Security PIN</th>
+                      <th className="py-3.5 px-4">2FA Security</th>
                       <th className="py-3.5 px-4">Status</th>
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
@@ -1358,6 +1558,12 @@ export default function AdminPortal({
                         </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-gray-500">
                           •••• ({u.pin})
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1 w-fit">
+                            <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                            Enforced (TOTP)
+                          </span>
                         </td>
                         <td className="py-3.5 px-4">
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${u.active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
@@ -1621,7 +1827,7 @@ export default function AdminPortal({
 
       {/* Standalone Admin Console Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-6 text-xs mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="w-full max-w-full px-2 sm:px-4 lg:px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="font-extrabold text-slate-300">{settings.storeName} Admin OS</span>

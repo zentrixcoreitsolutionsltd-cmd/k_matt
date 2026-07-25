@@ -13,8 +13,8 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   },
   {
     id: 'adm-002',
-    name: 'Kipchimatt Super Admin',
-    email: 'admin@kipchimatt.co.ke',
+    name: 'K-Matt Super Admin',
+    email: 'admin@kmatt.co.ke',
     role: 'super_admin',
     pin: '1234',
     department: 'Headquarters Operations',
@@ -24,7 +24,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: 'adm-003',
     name: 'Sarah Wambui (Inventory Lead)',
-    email: 'inventory@kipchimatt.co.ke',
+    email: 'inventory@kmatt.co.ke',
     role: 'inventory_manager',
     pin: '1234',
     department: 'Warehouse & Stock Operations',
@@ -33,7 +33,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: 'adm-004',
     name: 'David Ochieng (Orders Lead)',
-    email: 'orders@kipchimatt.co.ke',
+    email: 'orders@kmatt.co.ke',
     role: 'order_manager',
     pin: '1234',
     department: 'Logistics & Dispatch',
@@ -42,7 +42,7 @@ export const DEFAULT_ADMIN_USERS: AdminUser[] = [
   {
     id: 'adm-005',
     name: 'Grace Mutua (Compliance Auditor)',
-    email: 'auditor@kipchimatt.co.ke',
+    email: 'auditor@kmatt.co.ke',
     role: 'auditor',
     pin: '1234',
     department: 'Audit & Loss Prevention',
@@ -64,7 +64,7 @@ export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
   {
     id: 'log-002',
     timestamp: new Date(Date.now() - 3600000 * 18).toISOString(),
-    adminEmail: 'inventory@kipchimatt.co.ke',
+    adminEmail: 'inventory@kmatt.co.ke',
     adminName: 'Sarah Wambui (Inventory Lead)',
     adminRole: 'inventory_manager',
     category: 'inventory',
@@ -74,7 +74,7 @@ export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
   {
     id: 'log-003',
     timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-    adminEmail: 'orders@kipchimatt.co.ke',
+    adminEmail: 'orders@kmatt.co.ke',
     adminName: 'David Ochieng (Orders Lead)',
     adminRole: 'order_manager',
     category: 'orders',

@@ -100,12 +100,12 @@ export function calcDiscount(price: number, originalPrice: number): number {
 }
 
 export const defaultSettings: StoreSettings = {
-  storeName: "Kipchimatt Supermarket",
+  storeName: "K-Matt Supermarket",
   storePhone: "+254 700 000 000",
-  storeEmail: "support@kipchimatt.co.ke",
+  storeEmail: "support@kmatt.co.ke",
   deliveryFee: 150,
   freeDeliveryThreshold: 2000,
-  adminEmailForNotifications: "admin@kipchimatt.co.ke",
+  adminEmailForNotifications: "admin@kmatt.co.ke",
   lowStockEmailEnabled: true,
   lowStockThreshold: 5,
 };
@@ -164,7 +164,7 @@ export const defaultProducts: Product[] = [
   {
     id: 3,
     name: "Fresh Local Tomatoes 1kg Basket",
-    brand: "Kipchimatt Fresh",
+    brand: "K-Matt Fresh",
     category: "fresh food",
     price: 120,
     originalPrice: 150,
@@ -284,7 +284,7 @@ export const defaultProducts: Product[] = [
   {
     id: 11,
     name: "Fresh Avocadoes Premium Hass 1kg",
-    brand: "Kipchimatt Fresh",
+    brand: "K-Matt Fresh",
     category: "fresh food",
     price: 150,
     originalPrice: 180,
@@ -509,7 +509,7 @@ export const defaultProducts: Product[] = [
   {
     id: 26,
     name: "Non-Stick Granite Frying Pan 28cm with Glass Lid",
-    brand: "Kipchimatt Home",
+    brand: "K-Matt Home",
     category: "furniture",
     price: 2450,
     originalPrice: 2900,
@@ -524,7 +524,7 @@ export const defaultProducts: Product[] = [
   {
     id: 27,
     name: "Luxury Egyptian Cotton Bed Sheet Set (King Size)",
-    brand: "Kipchimatt Home",
+    brand: "K-Matt Home",
     category: "furniture",
     price: 3600,
     originalPrice: 4200,

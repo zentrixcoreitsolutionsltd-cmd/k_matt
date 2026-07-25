@@ -2,7 +2,7 @@ import { getGlobalCurrency, setGlobalCurrency, CURRENCY_TO_LANG, LANG_TO_CURRENC
 
 export const TRANSLATIONS: Record<string, Record<string, string>> = {
   en: {
-    'search_placeholder': 'Search over 15,000+ items across Kipchimatt...',
+    'search_placeholder': 'Search over 15,000+ items across K-Matt...',
     'deliver_to': 'Deliver to:',
     'all_departments': 'All Departments',
     'todays_deals': "Today's Deals",
@@ -31,7 +31,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     'search': 'Search',
   },
   sw: {
-    'search_placeholder': 'Tafuta zaidi ya bidhaa 15,000+ Kipchimatt...',
+    'search_placeholder': 'Tafuta zaidi ya bidhaa 15,000+ K-Matt...',
     'deliver_to': 'Peleka kwa:',
     'all_departments': 'Idara Zote',
     'todays_deals': 'Punguzo la Leo',

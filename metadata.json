@@ -1,5 +1,5 @@
 {
-  "name": "Kipchimatt Supermarket",
+  "name": "K-Matt Supermarket",
   "description": "Kenya's premier online grocery and supermarket storefront, complete with an interactive admin management portal for products, orders, and sales reports.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

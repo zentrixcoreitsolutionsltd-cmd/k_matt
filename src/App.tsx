@@ -1155,7 +1155,7 @@ export default function App() {
 
       {/* Universal Supermarket Footer (All Views) */}
       <footer className="bg-plum-dark text-white/80 pt-14 pb-8 mt-auto border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-full px-2 sm:px-4 lg:px-6">
           
           {/* Newsletter Banner */}
           <div className="bg-plum/40 border border-white/15 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 mb-12 shadow-lg">

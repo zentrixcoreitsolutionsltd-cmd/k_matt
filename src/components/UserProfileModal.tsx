@@ -332,7 +332,7 @@ export default function UserProfileModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-extrabold text-lg">
-                  {customer ? customer.name : 'Kipchimatt Member Services'}
+                  {customer ? customer.name : 'K-Matt Member Services'}
                 </h3>
                 {customer?.isVerified && (
                   <span className="bg-green/20 text-green-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-green-400/30 flex items-center gap-0.5">
@@ -520,7 +520,7 @@ export default function UserProfileModal({
                       <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 text-xs space-y-1 animate-pulse">
                         <div className="flex items-center gap-1.5 font-black text-amber-900 dark:text-amber-200">
                           <MessageSquareCode className="w-4 h-4 text-amber-600" />
-                          <span>💬 Kipchimatt SMS Dispatcher</span>
+                          <span>💬 K-Matt SMS Dispatcher</span>
                         </div>
                         <p className="text-gray-800 dark:text-gray-200 font-semibold text-[11px]">
                           Verification code for <strong>+254 {loginPhoneOrEmail}</strong> is:
@@ -749,7 +749,7 @@ export default function UserProfileModal({
                       className="w-4 h-4 accent-plum cursor-pointer rounded"
                     />
                     <label htmlFor="optInLoyalty" className="text-xs font-bold text-gray-800 dark:text-gray-200 cursor-pointer select-none">
-                      Opt-in to Kipchimatt Smart Loyalty Program (+150 Bonus Points)
+                      Opt-in to K-Matt Smart Loyalty Program (+150 Bonus Points)
                     </label>
                   </div>
 
@@ -774,10 +774,10 @@ export default function UserProfileModal({
                   <div className="bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 rounded-2xl p-4 text-xs space-y-2 text-center animate-pulse shadow-sm">
                     <div className="flex items-center justify-center gap-1.5 font-black text-amber-900 dark:text-amber-200">
                       <MessageSquareCode className="w-4 h-4 text-amber-600" />
-                      <span>💬 Kipchimatt SMS Dispatcher</span>
+                      <span>💬 K-Matt SMS Dispatcher</span>
                     </div>
                     <p className="text-gray-800 dark:text-gray-200 font-semibold">
-                      Your phone verification code for Kipchimatt Membership is:
+                      Your phone verification code for K-Matt Membership is:
                     </p>
                     <div className="font-black text-2xl tracking-widest text-plum bg-white dark:bg-gray-900 py-2 rounded-xl border border-amber-300 shadow-inner">
                       {generatedRegOtp}
@@ -1031,7 +1031,7 @@ export default function UserProfileModal({
               <div className="space-y-3">
                 <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-plum" />
-                  <span>Kipchimatt Member Tiers & Benefits</span>
+                  <span>K-Matt Member Tiers & Benefits</span>
                 </h4>
 
                 <div className="space-y-3">
@@ -1230,7 +1230,7 @@ export default function UserProfileModal({
                 <div className="p-8 text-center text-gray-500 font-medium border border-dashed border-gray-250 dark:border-gray-700 rounded-2xl space-y-2">
                   <Printer className="w-8 h-8 mx-auto text-gray-300" />
                   <p className="font-bold text-gray-700 dark:text-gray-300">No previous order receipts yet.</p>
-                  <p className="text-[11px]">When you place orders on Kipchimatt Supermarket, your receipts will be safely archived here for instant reordering and printing!</p>
+                  <p className="text-[11px]">When you place orders on K-Matt Supermarket, your receipts will be safely archived here for instant reordering and printing!</p>
                 </div>
               )}
             </div>

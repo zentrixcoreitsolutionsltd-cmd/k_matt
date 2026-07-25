@@ -90,7 +90,7 @@ export default function QuickViewDrawer({
             </span>
             <div>
               <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">Quick View</h3>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">{product.brand || 'Kipchimatt'}</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">{product.brand || 'K-Matt'}</p>
             </div>
           </div>
           
@@ -108,7 +108,7 @@ export default function QuickViewDrawer({
           {/* Image & Badges */}
           <div className="relative rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 h-64 flex items-center justify-center border border-gray-150 dark:border-gray-700">
             <img 
-              src={product.image || 'https://via.placeholder.com/400?text=Kipchimatt'} 
+              src={product.image || 'https://via.placeholder.com/400?text=K-Matt'} 
               alt={product.name}
               className="w-full h-full object-cover"
             />
@@ -187,7 +187,7 @@ export default function QuickViewDrawer({
           <div className="bg-gray-50 dark:bg-gray-800/60 p-3.5 rounded-2xl border border-gray-150 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 space-y-1.5">
             <p className="font-bold text-gray-900 dark:text-white">Product Highlights</p>
             <p className="leading-relaxed">
-              {product.description || `Fresh, authentic ${product.name} sourced directly for Kipchimatt shoppers. Quality guaranteed with 100% genuine Kenyan supply standard.`}
+              {product.description || `Fresh, authentic ${product.name} sourced directly for K-Matt shoppers. Quality guaranteed with 100% genuine Kenyan supply standard.`}
             </p>
           </div>
 

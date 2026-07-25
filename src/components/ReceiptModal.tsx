@@ -68,7 +68,7 @@ export default function ReceiptModal({
     txt += `========================================\n`;
     txt += `Status: PAID IN FULL (SUCCESS)\n`;
     txt += `Loyalty Points Earned: +${Math.floor(order.total / 100)} Points\n`;
-    txt += `Thank you for shopping with Kipchimatt!\n`;
+    txt += `Thank you for shopping with K-Matt!\n`;
     return txt;
   };
 
@@ -83,7 +83,7 @@ export default function ReceiptModal({
   const handleDownloadPdf = () => {
     try {
       generatePdfReceipt(order, settings);
-      if (onShowToast) onShowToast(`PDF Receipt saved as Kipchimatt_Receipt_${receiptNo}.pdf`, 'success');
+      if (onShowToast) onShowToast(`PDF Receipt saved as KMatt_Receipt_${receiptNo}.pdf`, 'success');
     } catch (err) {
       console.error('Error generating PDF:', err);
       handleDownloadTxt();
@@ -96,12 +96,12 @@ export default function ReceiptModal({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Kipchimatt_Receipt_${receiptNo}.txt`;
+    a.download = `KMatt_Receipt_${receiptNo}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    if (onShowToast) onShowToast(`Text Receipt saved as Kipchimatt_Receipt_${receiptNo}.txt`, 'success');
+    if (onShowToast) onShowToast(`Text Receipt saved as KMatt_Receipt_${receiptNo}.txt`, 'success');
   };
 
   const handleSendEmail = () => {
@@ -217,10 +217,10 @@ export default function ReceiptModal({
           {/* Header Branding */}
           <div className="text-center border-b border-dashed border-gray-300 dark:border-gray-700 pb-5 space-y-1">
             <div className="inline-flex items-center justify-center gap-2 mb-1">
-              <span className="bg-plum text-white font-black text-lg px-2.5 py-0.5 rounded-lg tracking-wider">KIPCHIMATT</span>
+              <span className="bg-plum text-white font-black text-lg px-2.5 py-0.5 rounded-lg tracking-wider">K-MATT</span>
             </div>
             <h1 className="text-base font-extrabold uppercase tracking-wide text-gray-900 dark:text-white print:text-black">
-              Kipchimatt Supermarkets Ltd
+              K-Matt Supermarkets Ltd
             </h1>
             <p className="text-[11px] text-gray-500 dark:text-gray-400 print:text-gray-700 font-medium">
               Head Office: Koinange Street, Nairobi | Tel: {settings.storePhone}
@@ -376,7 +376,7 @@ export default function ReceiptModal({
 
           {/* Footer Terms */}
           <div className="text-center text-[10px] text-gray-400 dark:text-gray-500 pt-2 border-t border-gray-150 dark:border-gray-800">
-            <p>Thank you for shopping at Kipchimatt Supermarkets!</p>
+            <p>Thank you for shopping at K-Matt Supermarkets!</p>
             <p>Goods in sound condition returnable within 7 days with this official receipt.</p>
           </div>
 

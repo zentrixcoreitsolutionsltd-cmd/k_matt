@@ -170,7 +170,7 @@ export default function Header({
       <div className="sticky top-0 z-40 w-full flex flex-col">
       {/* 1. PRIMARY AMAZON-STYLE HIGH-CONTRAST HEADER ROW */}
       <header className="bg-plum text-white py-2 shadow-md border-b border-plum-dark font-sans w-full">
-        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3 lg:gap-5">
+        <div className="w-full max-w-full px-2 sm:px-4 lg:px-6 flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-3 lg:gap-5">
           
           {/* Top Row for Mobile, or Left/Right for Desktop */}
           <div className="flex items-center justify-between w-full md:w-auto gap-3 shrink-0">
@@ -513,7 +513,7 @@ export default function Header({
             {/* Search text input */}
             <input 
               type="text" 
-              placeholder="Search Kipchimatt Supermarket..." 
+              placeholder="Search K-Matt Supermarket..." 
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
               className="flex-1 px-2.5 h-full outline-none text-xs text-gray-900 placeholder-gray-400 font-medium min-w-0"
@@ -544,7 +544,7 @@ export default function Header({
 
       {/* 2. SECONDARY SUB-HEADER ROW (All Categories & Quick Links - Mobile Scrollable) */}
       <nav className="bg-plum-dark text-white py-1 text-xs font-semibold flex items-center justify-between shadow-sm border-t border-white/5 select-none overflow-x-auto whitespace-nowrap scrollbar-none w-full">
-        <div className="max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2 sm:gap-4 min-w-max">
+        <div className="w-full max-w-full px-2 sm:px-4 lg:px-6 flex items-center justify-between gap-2 sm:gap-4 min-w-max">
           
           {/* Navigation quick-links & Drawer Toggle */}
           <div className="flex items-center gap-1 sm:gap-1.5">
@@ -652,7 +652,7 @@ export default function Header({
       {/* 3. QUICK HORIZONTAL CATEGORIES RAIL (Sits beautifully under the subheaders) */}
       {currentView === 'shop' && (
         <nav className="bg-white dark:bg-gray-900 border-b border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden select-none" id="quick-category-rail">
-          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none">
+          <div className="w-full max-w-full px-2 sm:px-4 lg:px-6 flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none">
             {categoryMeta.map((cat) => (
               <button
                 key={cat.key}
@@ -695,7 +695,7 @@ export default function Header({
                   <h3 className="font-extrabold text-base tracking-tight leading-none text-white">
                     {isLoggedIn ? 'Hello, Customer' : 'Hello, Sign In'}
                   </h3>
-                  <p className="text-[10px] text-gray-400 mt-1 font-semibold">Your Kipchimatt Account</p>
+                  <p className="text-[10px] text-gray-400 mt-1 font-semibold">Your K-Matt Account</p>
                 </div>
               </div>
               <button 
