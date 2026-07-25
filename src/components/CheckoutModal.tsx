@@ -325,9 +325,9 @@ export default function CheckoutModal({
                   <button 
                     type="button" 
                     onClick={() => setPaymentMethod('Cash on Delivery')}
-                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-yellow bg-yellow/10 text-yellow-800 dark:text-yellow-400' : 'border-gray-250 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
+                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-plum bg-plum/10 text-plum dark:text-pink-300' : 'border-gray-250 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
                   >
-                    <Building2 className="w-4 h-4 text-yellow-600 flex-shrink-0" />
+                    <Building2 className="w-4 h-4 text-plum dark:text-pink-400 flex-shrink-0" />
                     <span className="text-[10px] sm:text-xs truncate w-full">Cash</span>
                   </button>
                 </div>

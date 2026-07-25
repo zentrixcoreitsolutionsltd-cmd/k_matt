@@ -255,7 +255,7 @@ export default function QuickViewDrawer({
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-4 h-4 text-yellow" />
+                  <ShoppingCart className="w-4 h-4 text-white" />
                   <span>{isOutOfStock ? 'Out of Stock' : `Add ${qty > 1 ? `${qty} Items` : 'to Cart'}`}</span>
                 </>
               )}

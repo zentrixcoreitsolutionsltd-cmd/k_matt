@@ -38,6 +38,8 @@ export interface Customer {
   city: string;
   county: string;
   points?: number;
+  password?: string;
+  isVerified?: boolean;
 }
 
 export interface Order {

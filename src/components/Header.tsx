@@ -178,7 +178,7 @@ export default function Header({
               {/* Mobile Hamburger Menu (hidden on desktop) */}
               <button 
                 onClick={() => setMobileMenuOpen(true)}
-                className="md:hidden bg-white text-plum hover:bg-yellow hover:text-plum cursor-pointer p-1.5 rounded-lg shrink-0 transition-colors shadow-sm flex items-center justify-center"
+                className="md:hidden bg-white text-plum hover:bg-gray-100 hover:text-plum cursor-pointer p-1.5 rounded-lg shrink-0 transition-colors shadow-sm flex items-center justify-center"
                 aria-label="Toggle Navigation Menu"
                 id="mobile-menu-trigger"
               >
@@ -224,7 +224,7 @@ export default function Header({
                 title="Change Language & Currency"
               >
                 <span className="text-xs">{languages.find(l => l.code === selectedLang)?.flag || '🌐'}</span>
-                <span className="text-[11px] text-yellow font-black uppercase">{CURRENCIES[currentCurrency]?.code || 'KES'}</span>
+                <span className="text-[11px] text-white font-black uppercase">{CURRENCIES[currentCurrency]?.code || 'KES'}</span>
                 <ChevronDown className="w-2.5 h-2.5 text-gray-200" />
               </button>
 
@@ -292,7 +292,7 @@ export default function Header({
             className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-white/30 cursor-pointer relative shrink-0 transition-all max-w-[140px] lg:max-w-[155px]"
             id="delivery-widget"
           >
-            <MapPin className="w-4 h-4 text-yellow shrink-0 self-center" />
+            <MapPin className="w-4 h-4 text-white shrink-0 self-center" />
             <div className="flex flex-col text-left min-w-0 flex-1">
               <span className="text-[10px] text-gray-300 font-semibold leading-none mb-0.5">{t('deliver_to')}</span>
               <div className="relative flex items-center min-w-0 w-full">
@@ -380,9 +380,9 @@ export default function Header({
               <div className="flex items-center gap-1 font-black text-xs">
                 <span className="text-white tracking-wide uppercase">{selectedLang}</span>
                 <span className="text-white/30 text-xs">•</span>
-                <span className="text-yellow">{CURRENCIES[currentCurrency]?.code || 'KES'} ({CURRENCIES[currentCurrency]?.symbol || 'KSh'})</span>
+                <span className="text-white">{CURRENCIES[currentCurrency]?.code || 'KES'} ({CURRENCIES[currentCurrency]?.symbol || 'KSh'})</span>
               </div>
-              <ChevronDown className="w-3 h-3 text-gray-300 group-hover:text-yellow transition-colors" />
+              <ChevronDown className="w-3 h-3 text-gray-300 group-hover:text-white transition-colors" />
             </button>
 
             {/* Account & Lists panel with elegant Hover State */}
@@ -466,13 +466,13 @@ export default function Header({
           {/* Quick Deliver To Location Pill for Mobile */}
           <div className="flex items-center justify-between text-white text-[11px] font-bold px-1">
             <div className="flex items-center gap-1 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-yellow shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-white shrink-0" />
               <span className="text-gray-200 font-normal shrink-0">Deliver to:</span>
               <div className="relative inline-flex items-center min-w-0">
                 <select 
                   value={deliveryLocation}
                   onChange={(e) => onDeliveryLocationChange(e.target.value)}
-                  className="bg-transparent text-yellow font-black outline-none cursor-pointer pr-4 appearance-none text-[11px] truncate max-w-[150px]"
+                  className="bg-transparent text-white font-black outline-none cursor-pointer pr-4 appearance-none text-[11px] truncate max-w-[150px]"
                   title="Select Delivery County"
                 >
                   {KENYA_COUNTIES.map((c) => (
@@ -481,12 +481,12 @@ export default function Header({
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="w-3 h-3 text-yellow absolute right-0 pointer-events-none" />
+                <ChevronDown className="w-3 h-3 text-white absolute right-0 pointer-events-none" />
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0 text-[10px] text-green-300 font-extrabold">
-              <Truck className="w-3 h-3 text-yellow" />
+              <Truck className="w-3 h-3 text-white" />
               <span>Kikapu Express</span>
             </div>
           </div>
@@ -533,7 +533,7 @@ export default function Header({
             {/* Trigger search button */}
             <button 
               type="submit"
-              className="h-full px-3.5 bg-orange hover:bg-orange/80 text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              className="h-full px-3.5 bg-plum hover:bg-plum-dark text-white flex items-center justify-center cursor-pointer transition-colors shrink-0"
               aria-label="Submit Search Query"
             >
               <Search className="w-4.5 h-4.5 stroke-[2.5]" />
@@ -552,7 +552,7 @@ export default function Header({
             {/* Mega Menu Drawer Toggle */}
             <button 
               onClick={() => setMegaMenuOpen(true)}
-              className="flex items-center gap-1.5 bg-white text-plum hover:bg-yellow hover:text-plum cursor-pointer transition-all font-black uppercase tracking-wider py-1 px-2.5 rounded-md shadow-sm shrink-0"
+              className="flex items-center gap-1.5 bg-white text-plum hover:bg-gray-100 hover:text-plum cursor-pointer transition-all font-black uppercase tracking-wider py-1 px-2.5 rounded-md shadow-sm shrink-0"
               id="mega-menu-trigger-all"
             >
               <Menu className="w-4 h-4 stroke-[2.5] text-plum" />
@@ -587,9 +587,9 @@ export default function Header({
               </button>
               <button 
                 onClick={() => selectCategory('liquor')} 
-                className="border border-transparent hover:border-yellow font-bold py-1 px-2 rounded text-yellow transition-all text-[11px] sm:text-xs cursor-pointer flex items-center gap-1 shrink-0"
+                className="border border-transparent hover:border-white font-bold py-1 px-2 rounded text-white transition-all text-[11px] sm:text-xs cursor-pointer flex items-center gap-1 shrink-0"
               >
-                <Tag className="w-3 h-3 text-yellow" />
+                <Tag className="w-3 h-3 text-white" />
                 Liquor Cellar
               </button>
             </div>
@@ -628,7 +628,7 @@ export default function Header({
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => onViewChange('shop')}
-                  className="flex items-center gap-1 hover:text-white py-1 px-2 rounded bg-orange text-white cursor-pointer font-bold transition-all text-[11px]"
+                  className="flex items-center gap-1 hover:bg-gray-100 text-slate-950 bg-white font-black py-1 px-2.5 rounded transition-all text-[11px]"
                 >
                   <Store className="w-3 h-3" />
                   <span>Storefront</span>
@@ -692,7 +692,7 @@ export default function Header({
                   <User className="w-6 h-6 text-plum" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-base tracking-tight leading-none text-yellow">
+                  <h3 className="font-extrabold text-base tracking-tight leading-none text-white">
                     {isLoggedIn ? 'Hello, Customer' : 'Hello, Sign In'}
                   </h3>
                   <p className="text-[10px] text-gray-400 mt-1 font-semibold">Your Kipchimatt Account</p>
@@ -710,10 +710,10 @@ export default function Header({
             {/* Sub banner advertisement */}
             <div className="bg-plum-dark text-white py-3 px-5 text-[11px] font-bold flex items-center justify-between border-b border-white/5 shrink-0 select-none">
               <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-yellow" />
+                <Sparkles className="w-3.5 h-3.5 text-white" />
                 <span>Supercharged shopping deals today!</span>
               </span>
-              <span className="text-yellow uppercase tracking-wider text-[9px] font-black bg-white/10 px-1.5 py-0.5 rounded">HOT</span>
+              <span className="text-white uppercase tracking-wider text-[9px] font-black bg-white/10 px-1.5 py-0.5 rounded">HOT</span>
             </div>
 
             {/* Grouped Department Lists (The robust categorized mega-menu structure) */}
@@ -727,21 +727,21 @@ export default function Header({
                 <div className="space-y-2 text-sm font-bold text-gray-750 dark:text-gray-250">
                   <button 
                     onClick={() => { selectCategory('all'); setMegaMenuOpen(false); }}
-                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-yellow transition-colors"
+                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
                   >
                     <span>Today's Kikapu Chapchap Deals</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
                   </button>
                   <button 
                     onClick={() => { selectCategory('fresh food'); setMegaMenuOpen(false); }}
-                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-yellow transition-colors"
+                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
                   >
                     <span>Fresh Local Farm Harvests</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
                   </button>
                   <button 
                     onClick={() => { selectCategory('liquor'); setMegaMenuOpen(false); }}
-                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-yellow transition-colors"
+                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
                   >
                     <span>Premium Liquor & Spirits</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
@@ -761,7 +761,7 @@ export default function Header({
                     <button
                       key={cat.key}
                       onClick={() => selectCategory(cat.key)}
-                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-yellow group transition-colors"
+                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-pink-300 group transition-colors"
                     >
                       <span>{cat.label}</span>
                       <ChevronRight className="w-4 h-4 text-gray-350 group-hover:translate-x-0.5 transition-all" />
@@ -782,7 +782,7 @@ export default function Header({
                     <button
                       key={cat.key}
                       onClick={() => selectCategory(cat.key)}
-                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-yellow group transition-colors"
+                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-pink-300 group transition-colors"
                     >
                       <span>{cat.label}</span>
                       <ChevronRight className="w-4 h-4 text-gray-350 group-hover:translate-x-0.5 transition-all" />
@@ -803,7 +803,7 @@ export default function Header({
                     <button
                       key={cat.key}
                       onClick={() => selectCategory(cat.key)}
-                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-yellow group transition-colors"
+                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-pink-300 group transition-colors"
                     >
                       <span>{cat.label}</span>
                       <ChevronRight className="w-4 h-4 text-gray-350 group-hover:translate-x-0.5 transition-all" />
@@ -822,19 +822,19 @@ export default function Header({
                 <div className="space-y-2 text-sm font-bold text-gray-750 dark:text-gray-250">
                   <button 
                     onClick={() => { onToggleUserProfile(); setMegaMenuOpen(false); }}
-                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-yellow transition-colors"
+                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
                   >
                     Your Profile & Settings
                   </button>
                   <button 
                     onClick={() => { onToggleUserProfile(); setMegaMenuOpen(false); }}
-                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-yellow transition-colors"
+                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
                   >
                     Order History & Invoices
                   </button>
                   <button 
                     onClick={() => { onToggleTheme(); setMegaMenuOpen(false); }}
-                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-yellow transition-colors"
+                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
                   >
                     {isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                   </button>
@@ -879,10 +879,10 @@ export default function Header({
             <div className="bg-plum text-white p-4 sm:p-5 flex flex-col gap-3 relative border-b border-plum-dark shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center p-1 shrink-0">
-                  <User className="w-6 h-6 text-yellow" />
+                  <User className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <h2 className="font-black text-sm tracking-tight leading-none text-yellow truncate">
+                  <h2 className="font-black text-sm tracking-tight leading-none text-white truncate">
                     {isLoggedIn ? 'Hello, Customer' : 'Hello, Sign In'}
                   </h2>
                   <span className="text-[10px] text-gray-200 mt-1 font-bold">Manage Account, Wishlist & Tracking</span>
@@ -930,10 +930,10 @@ export default function Header({
               <button 
                 type="button"
                 onClick={() => { setLangModalOpen(true); setMobileMenuOpen(false); }}
-                className="mx-4 mb-2 p-3 bg-gradient-to-r from-plum/10 via-plum/5 to-amber-500/10 dark:from-gray-800/80 dark:to-gray-800 rounded-xl border border-plum/20 dark:border-gray-700 flex items-center justify-between text-left cursor-pointer hover:border-plum transition-all shadow-2xs group"
+                className="mx-4 mb-2 p-3 bg-gradient-to-r from-plum/10 via-plum/5 to-white/10 dark:from-gray-800/80 dark:to-gray-800 rounded-xl border border-plum/20 dark:border-gray-700 flex items-center justify-between text-left cursor-pointer hover:border-plum transition-all shadow-2xs group"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-plum dark:bg-pink-600 text-yellow flex items-center justify-center font-bold shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-plum dark:bg-pink-600 text-white flex items-center justify-center font-bold shrink-0">
                     <Globe className="w-4 h-4" />
                   </div>
                   <div>
@@ -943,11 +943,11 @@ export default function Header({
                     <p className="text-[11px] font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1">
                       <span>{languages.find(l => l.code === selectedLang)?.flag} {languages.find(l => l.code === selectedLang)?.label}</span>
                       <span>•</span>
-                      <span className="text-amber-600 dark:text-yellow">{CURRENCIES[currentCurrency]?.code} ({CURRENCIES[currentCurrency]?.symbol})</span>
+                      <span className="text-plum dark:text-white font-extrabold">{CURRENCIES[currentCurrency]?.code} ({CURRENCIES[currentCurrency]?.symbol})</span>
                     </p>
                   </div>
                 </div>
-                <div className="px-2.5 py-1 rounded-lg bg-white dark:bg-gray-900 text-plum dark:text-yellow text-[10px] font-black border border-plum/20 shrink-0">
+                <div className="px-2.5 py-1 rounded-lg bg-white dark:bg-gray-900 text-plum dark:text-white text-[10px] font-black border border-plum/20 shrink-0">
                   Change
                 </div>
               </button>
@@ -987,7 +987,7 @@ export default function Header({
                   </button>
                   <button
                     onClick={() => { selectCategory('liquor'); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-yellow dark:text-yellow border border-gray-200/80 dark:border-gray-700/80 hover:border-yellow"
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-white dark:text-white border border-gray-200/80 dark:border-gray-700/80 hover:border-white"
                   >
                     <span>🍷</span>
                     <span className="truncate">Liquor Cellar</span>
@@ -1036,7 +1036,7 @@ export default function Header({
                   <span>My Shopping Cart</span>
                 </span>
                 {cartCount > 0 && (
-                  <span className="bg-orange text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse">
+                  <span className="bg-plum text-white text-[10px] px-2 py-0.5 rounded-full font-black">
                     {cartCount}
                   </span>
                 )}
@@ -1054,7 +1054,7 @@ export default function Header({
                 onClick={() => { onToggleTheme(); setMobileMenuOpen(false); }}
                 className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
               >
-                {isDark ? <Sun className="w-4.5 h-4.5 text-yellow" /> : <Moon className="w-4.5 h-4.5 text-gray-500" />}
+                {isDark ? <Sun className="w-4.5 h-4.5 text-white" /> : <Moon className="w-4.5 h-4.5 text-gray-500" />}
                 <span>{isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}</span>
               </button>
 
@@ -1071,7 +1071,7 @@ export default function Header({
 
               {/* Store Helpline / Contacts Footer */}
               <div className="mx-4 mt-3 p-3 bg-plum/5 dark:bg-gray-800/60 rounded-xl border border-plum/10 dark:border-gray-700/60 text-xs">
-                <div className="flex items-center gap-1.5 font-black text-plum dark:text-yellow">
+                <div className="flex items-center gap-1.5 font-black text-plum dark:text-white">
                   <Phone className="w-3.5 h-3.5" />
                   <span>Kipchimatt Hotline</span>
                 </div>

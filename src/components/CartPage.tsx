@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, ArrowLeft, 
   CreditCard, Phone, MapPin, User, Mail, ShieldCheck, CheckCircle2, 
-  Truck, Tag, Building2, Lock, Smartphone, RefreshCw, Printer, AlertCircle, Sparkles, Check, Download
+  Truck, Tag, Building2, Lock, Smartphone, RefreshCw, Printer, AlertCircle, Sparkles, Check, Download, UserPlus
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CartItem, StoreSettings, Order, Customer } from '../types';
@@ -37,6 +37,7 @@ interface CartPageProps {
   onBackToShop?: () => void;
   orders?: Order[];
   currentCustomer?: Customer | null;
+  onOpenAuthModal?: () => void;
 }
 
 const PICKUP_BRANCHES = [
@@ -60,7 +61,8 @@ export default function CartPage({
   onPlaceOrder,
   onBackToShop,
   orders,
-  currentCustomer
+  currentCustomer,
+  onOpenAuthModal
 }: CartPageProps) {
   // Steps: 'basket' | 'shipping' | 'payment' | 'confirmation'
   const [step, setStep] = useState<'basket' | 'shipping' | 'payment' | 'confirmation'>('basket');
@@ -77,7 +79,7 @@ export default function CartPage({
   const [notes, setNotes] = useState('');
 
   // Loyalty Points Redemption State
-  const availablePoints = currentCustomer?.points ?? 120;
+  const availablePoints = currentCustomer ? (currentCustomer.points ?? 0) : 0;
   const [redeemPointsEnabled, setRedeemPointsEnabled] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState<number>(availablePoints);
 
@@ -210,7 +212,7 @@ export default function CartPage({
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 animate-fade-in">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 animate-fade-in">
       
       {/* Printable Receipt Modal Overlay */}
       {completedOrder && (
@@ -223,25 +225,25 @@ export default function CartPage({
       )}
 
       {/* Top Header & Breadcrumbs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <button 
             onClick={onBackToShop || onContinueShopping}
-            className="inline-flex items-center gap-2 text-xs font-extrabold text-plum hover:underline cursor-pointer mb-2"
+            className="inline-flex items-center gap-2 text-xs font-extrabold text-plum dark:text-pink-400 hover:underline cursor-pointer mb-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Continue Shopping Supermarket Items</span>
           </button>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
             Checkout & Order Fulfillment
           </h1>
         </div>
 
         {/* Step Progress Pill Bar */}
-        <div className="flex items-center gap-1.5 sm:gap-3 bg-white dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm text-xs font-bold">
+        <div className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-gray-900 p-1 sm:p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm text-[11px] sm:text-xs font-bold overflow-x-auto">
           <button 
             onClick={() => setStep('basket')}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${step === 'basket' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'basket' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
           >
             <ShoppingCart className="w-3.5 h-3.5" />
             <span>1. Cart ({cart.reduce((s, i) => s + i.qty, 0)})</span>
@@ -252,7 +254,7 @@ export default function CartPage({
           <button 
             onClick={() => cart.length > 0 && setStep('shipping')}
             disabled={cart.length === 0}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${step === 'shipping' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'shipping' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40'}`}
           >
             <Truck className="w-3.5 h-3.5" />
             <span>2. Delivery</span>
@@ -263,7 +265,7 @@ export default function CartPage({
           <button 
             onClick={() => cart.length > 0 && name && phone && setStep('payment')}
             disabled={cart.length === 0 || !name || !phone}
-            className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${step === 'payment' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'payment' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40'}`}
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>3. Payment</span>
@@ -278,7 +280,7 @@ export default function CartPage({
             <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-plum/20 to-pink-500/10 text-plum dark:text-pink-400 mx-auto flex items-center justify-center shadow-inner">
               <ShoppingCart className="w-12 h-12" />
             </div>
-            <div className="absolute -top-2 -right-2 bg-yellow text-plum font-black text-xs px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 animate-bounce">
+            <div className="absolute -top-2 -right-2 bg-white text-plum font-black text-xs px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 animate-bounce">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Empty</span>
             </div>
@@ -296,7 +298,7 @@ export default function CartPage({
               onClick={onBackToShop || onContinueShopping}
               className="inline-flex items-center justify-center gap-2 bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-8 py-3.5 rounded-xl transition-all cursor-pointer uppercase tracking-wider shadow-lg hover:shadow-xl active:scale-98"
             >
-              <ArrowLeft className="w-4 h-4 text-yellow" />
+              <ArrowLeft className="w-4 h-4 text-white" />
               <span>Back to Shopping</span>
             </button>
           </div>
@@ -402,35 +404,43 @@ export default function CartPage({
 
                   <div className="divide-y divide-gray-150 dark:divide-gray-800">
                     {cart.map((item) => (
-                      <div key={item.id} className="py-4 flex items-center gap-4">
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          className="w-20 h-20 object-cover rounded-2xl border border-gray-200 dark:border-gray-700 bg-white"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-extrabold text-sm text-gray-900 dark:text-white truncate">{item.name}</h3>
-                          <p className="text-xs font-black text-plum dark:text-pink-400 mt-1">{formatMoney(item.price)} each</p>
+                      <div key={item.id} className="py-3 sm:py-4 flex flex-row items-center justify-between gap-2 sm:gap-4">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-12 h-12 sm:w-16 sm:h-20 object-cover rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-extrabold text-[11px] sm:text-sm text-gray-900 dark:text-white truncate">{item.name}</h3>
+                            <p className="text-[10px] sm:text-xs font-black text-plum dark:text-pink-400 mt-0.5">
+                              {formatMoney(item.price)} <span className="text-[9px] text-gray-400 font-normal hidden xs:inline">/ unit</span>
+                            </p>
+                          </div>
                         </div>
 
-                        {/* Quantity controls */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-1.5">
-                            <button onClick={() => onQtyChange(item.id, -1)} className="text-gray-500 hover:text-plum font-bold cursor-pointer">
-                              <Minus className="w-3.5 h-3.5" />
+                        {/* Quantity controls & Price */}
+                        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                          <div className="flex items-center gap-1 sm:gap-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 px-1.5 sm:px-2.5 py-1">
+                            <button onClick={() => onQtyChange(item.id, -1)} className="text-gray-500 hover:text-plum font-bold cursor-pointer p-0.5">
+                              <Minus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </button>
-                            <span className="text-xs font-black text-gray-900 dark:text-white min-w-[20px] text-center">{item.qty}</span>
-                            <button onClick={() => onQtyChange(item.id, 1)} className="text-gray-500 hover:text-plum font-bold cursor-pointer">
-                              <Plus className="w-3.5 h-3.5" />
+                            <span className="text-[11px] sm:text-xs font-black text-gray-900 dark:text-white min-w-[16px] sm:min-w-[20px] text-center">{item.qty}</span>
+                            <button onClick={() => onQtyChange(item.id, 1)} className="text-gray-500 hover:text-plum font-bold cursor-pointer p-0.5">
+                              <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
 
-                          <span className="text-xs font-black text-gray-900 dark:text-white w-20 text-right">
+                          <span className="text-[11px] sm:text-sm font-black text-gray-900 dark:text-white min-w-[50px] sm:min-w-[70px] text-right">
                             {formatMoney(item.price * item.qty)}
                           </span>
 
-                          <button onClick={() => onRemoveItem(item.id)} className="text-gray-400 hover:text-red-500 p-1 cursor-pointer">
-                            <Trash2 className="w-4 h-4" />
+                          <button 
+                            onClick={() => onRemoveItem(item.id)} 
+                            className="text-gray-400 hover:text-red-500 p-1 sm:p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
+                            title="Remove item from cart"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </div>
@@ -439,38 +449,38 @@ export default function CartPage({
                 </div>
 
                 {/* Delivery Location Selector & Fulfillment Choice */}
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
-                  <h3 className="font-extrabold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-2">
                     <Truck className="w-4 h-4 text-plum" />
                     <span>Select Fulfillment Method</span>
                   </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     <button 
                       type="button"
                       onClick={() => setDeliveryType('express')}
-                      className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'express' ? 'border-plum bg-plum/5 ring-2 ring-plum/20' : 'border-gray-200 dark:border-gray-700'}`}
+                      className={`p-2.5 sm:p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'express' ? 'border-plum bg-plum/5 ring-2 ring-plum/20' : 'border-gray-200 dark:border-gray-700'}`}
                     >
-                      <div className="flex items-center gap-2 font-black text-xs text-gray-900 dark:text-white">
-                        <Truck className="w-4 h-4 text-plum" />
-                        <span>Doorstep Rider Express</span>
+                      <div className="flex items-center gap-1.5 font-black text-[11px] sm:text-xs text-gray-900 dark:text-white">
+                        <Truck className="w-3.5 h-3.5 text-plum shrink-0" />
+                        <span className="truncate">Doorstep Express</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                        Delivered in under 90 mins to your address in {deliveryLocation}.
+                      <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                        Under 90 mins rider delivery in {deliveryLocation}.
                       </p>
                     </button>
 
                     <button 
                       type="button"
                       onClick={() => setDeliveryType('pickup')}
-                      className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'pickup' ? 'border-green bg-green/5 ring-2 ring-green/20' : 'border-gray-200 dark:border-gray-700'}`}
+                      className={`p-2.5 sm:p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'pickup' ? 'border-green bg-green/5 ring-2 ring-green/20' : 'border-gray-200 dark:border-gray-700'}`}
                     >
-                      <div className="flex items-center gap-2 font-black text-xs text-gray-900 dark:text-white">
-                        <Building2 className="w-4 h-4 text-green" />
-                        <span>In-Store Pick Up (Free)</span>
+                      <div className="flex items-center gap-1.5 font-black text-[11px] sm:text-xs text-gray-900 dark:text-white">
+                        <Building2 className="w-3.5 h-3.5 text-green shrink-0" />
+                        <span className="truncate">Store Pick Up</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                        Collect ready packed order at any Kipchimatt branch counter.
+                      <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                        Collect ready packed at any branch counter.
                       </p>
                     </button>
                   </div>
@@ -606,10 +616,10 @@ export default function CartPage({
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-gray-150 dark:border-gray-800">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-150 dark:border-gray-800">
                   <button 
                     onClick={() => setStep('basket')}
-                    className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+                    className="w-full sm:w-auto bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
                   >
                     Back to Basket
                   </button>
@@ -662,9 +672,9 @@ export default function CartPage({
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('Cash on Delivery')}
-                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-yellow bg-yellow/10 text-yellow-800 dark:text-yellow-400 ring-2 ring-yellow/20' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
+                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-plum bg-plum/10 text-plum dark:text-pink-300 ring-2 ring-plum/20' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
                     >
-                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 flex-shrink-0" />
+                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-plum dark:text-pink-400 flex-shrink-0" />
                       <span className="truncate">Pay on Delivery</span>
                     </button>
                   </div>
@@ -773,7 +783,7 @@ export default function CartPage({
                     <div className="bg-gradient-to-tr from-plum-dark via-plum to-pink-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 sm:space-y-4 relative overflow-hidden">
                       <div className="flex justify-between items-center gap-2">
                         <span className="text-[9px] sm:text-[10px] font-mono tracking-wider text-white/70 uppercase truncate">KIPCHIMATT SECURE CARD</span>
-                        <span className="font-black text-xs sm:text-sm text-yellow uppercase flex-shrink-0">{getCardBrand()}</span>
+                        <span className="font-black text-xs sm:text-sm text-white uppercase flex-shrink-0">{getCardBrand()}</span>
                       </div>
 
                       <div className="space-y-1">
@@ -874,9 +884,9 @@ export default function CartPage({
                 {/* OPTION C: CASH ON DELIVERY */}
                 {paymentMethod === 'Cash on Delivery' && (
                   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-md space-y-4">
-                    <div className="bg-yellow-50 dark:bg-yellow-950/40 p-4 rounded-2xl border border-yellow-200 dark:border-yellow-800 text-xs text-yellow-900 dark:text-yellow-200 space-y-1">
-                      <h4 className="font-extrabold flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-yellow-600" />
+                    <div className="bg-plum/5 dark:bg-gray-800 p-4 rounded-2xl border border-plum/20 dark:border-gray-700 text-xs text-gray-800 dark:text-gray-200 space-y-1">
+                      <h4 className="font-extrabold flex items-center gap-1.5 text-plum dark:text-pink-300">
+                        <Building2 className="w-4 h-4 text-plum dark:text-pink-400" />
                         <span>Pay on Delivery / Collection</span>
                       </h4>
                       <p>
@@ -926,7 +936,7 @@ export default function CartPage({
               <div className="bg-plum/5 dark:bg-gray-800/80 border border-plum/15 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs font-black text-gray-900 dark:text-white">
-                    <Sparkles className="w-4 h-4 text-yellow" />
+                    <Sparkles className="w-4 h-4 text-plum dark:text-pink-400" />
                     <span>Loyalty Points (Optional)</span>
                   </div>
                   <span className="text-[10px] font-extrabold bg-plum/10 dark:bg-pink-900/40 text-plum dark:text-pink-300 px-2 py-0.5 rounded-full">
@@ -934,66 +944,91 @@ export default function CartPage({
                   </span>
                 </div>
 
-                <div className="text-xs text-gray-700 dark:text-gray-300 flex items-center justify-between font-bold bg-white dark:bg-gray-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
-                  <span>Available Balance:</span>
-                  <span className="text-plum dark:text-pink-400 font-black">{availablePoints} Points (KSh {availablePoints})</span>
-                </div>
-
-                {availablePoints > 0 ? (
-                  <div className="space-y-2 pt-1">
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight">
-                      Using points is completely optional. Leave unchecked to save points for later orders.
-                    </p>
-
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-800 dark:text-gray-200 select-none">
-                        <input 
-                          type="checkbox"
-                          checked={redeemPointsEnabled}
-                          onChange={(e) => {
-                            setRedeemPointsEnabled(e.target.checked);
-                            if (e.target.checked && pointsToRedeem === 0) {
-                              setPointsToRedeem(Math.min(availablePoints, rawSubtotal));
-                            }
-                          }}
-                          className="w-4 h-4 accent-plum rounded cursor-pointer"
-                        />
-                        <span>Redeem points on this order</span>
-                      </label>
-
-                      {redeemPointsEnabled && (
-                        <button
-                          type="button"
-                          onClick={() => setPointsToRedeem(Math.min(availablePoints, rawSubtotal))}
-                          className="text-[10px] bg-plum hover:bg-plum-dark text-white font-extrabold px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                        >
-                          Max ({Math.min(availablePoints, rawSubtotal)} pts)
-                        </button>
-                      )}
+                {!currentCustomer ? (
+                  <div className="bg-plum/5 dark:bg-gray-800 border border-plum/20 dark:border-gray-700 rounded-2xl p-3.5 space-y-2.5 text-xs">
+                    <div className="flex items-center gap-2 text-plum dark:text-pink-300 font-extrabold">
+                      <Lock className="w-4 h-4 text-plum dark:text-pink-400 shrink-0" />
+                      <span>Sign In Required to Redeem Points</span>
                     </div>
-
-                    {redeemPointsEnabled && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <input 
-                          type="number"
-                          min={0}
-                          max={Math.min(availablePoints, rawSubtotal)}
-                          value={pointsToRedeem}
-                          onChange={(e) => {
-                            const val = Math.max(0, Math.min(Number(e.target.value) || 0, Math.min(availablePoints, rawSubtotal)));
-                            setPointsToRedeem(val);
-                          }}
-                          className="w-full px-3 py-1.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-black text-gray-900 dark:text-white outline-none focus:border-plum"
-                          placeholder="Points to redeem"
-                        />
-                        <span className="text-xs font-black text-green shrink-0">
-                          -KSh {actualPointsToRedeem}
-                        </span>
-                      </div>
-                    )}
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium leading-snug">
+                      Loyalty points are linked to member accounts. Please sign in or create an account with phone OTP verification to redeem points.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onOpenAuthModal && onOpenAuthModal()}
+                      className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-98"
+                    >
+                      <UserPlus className="w-3.5 h-3.5 text-white" />
+                      <span>Sign In / Create Account to Redeem Points</span>
+                    </button>
                   </div>
                 ) : (
-                  <p className="text-[11px] text-gray-500 font-medium">Earn points on every purchase to unlock optional discounts on future orders.</p>
+                  <>
+                    <div className="text-xs text-gray-700 dark:text-gray-300 flex items-center justify-between font-bold bg-white dark:bg-gray-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green" />
+                        <span>Signed in as <strong>{currentCustomer.name}</strong></span>
+                      </div>
+                      <span className="text-plum dark:text-pink-400 font-black">{availablePoints} Points (KSh {availablePoints})</span>
+                    </div>
+
+                    {availablePoints > 0 ? (
+                      <div className="space-y-2 pt-1">
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight">
+                          Using points is completely optional. Leave unchecked to save points for later orders.
+                        </p>
+
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-800 dark:text-gray-200 select-none">
+                            <input 
+                              type="checkbox"
+                              checked={redeemPointsEnabled}
+                              onChange={(e) => {
+                                setRedeemPointsEnabled(e.target.checked);
+                                if (e.target.checked && pointsToRedeem === 0) {
+                                  setPointsToRedeem(Math.min(availablePoints, rawSubtotal));
+                                }
+                              }}
+                              className="w-4 h-4 accent-plum rounded cursor-pointer"
+                            />
+                            <span>Redeem points on this order</span>
+                          </label>
+
+                          {redeemPointsEnabled && (
+                            <button
+                              type="button"
+                              onClick={() => setPointsToRedeem(Math.min(availablePoints, rawSubtotal))}
+                              className="text-[10px] bg-plum hover:bg-plum-dark text-white font-extrabold px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                            >
+                              Max ({Math.min(availablePoints, rawSubtotal)} pts)
+                            </button>
+                          )}
+                        </div>
+
+                        {redeemPointsEnabled && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <input 
+                              type="number"
+                              min={0}
+                              max={Math.min(availablePoints, rawSubtotal)}
+                              value={pointsToRedeem}
+                              onChange={(e) => {
+                                const val = Math.max(0, Math.min(Number(e.target.value) || 0, Math.min(availablePoints, rawSubtotal)));
+                                setPointsToRedeem(val);
+                              }}
+                              className="w-full px-3 py-1.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-black text-gray-900 dark:text-white outline-none focus:border-plum"
+                              placeholder="Points to redeem"
+                            />
+                            <span className="text-xs font-black text-green shrink-0">
+                              -KSh {actualPointsToRedeem}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-gray-500 font-medium">Earn points on every purchase to unlock optional discounts on future orders.</p>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -1037,7 +1072,7 @@ export default function CartPage({
 
               {/* Loyalty points notification */}
               <div className="bg-plum-fade dark:bg-gray-800 p-3 rounded-2xl text-[11px] font-bold text-plum dark:text-pink-300 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-yellow" />
+                <Sparkles className="w-4 h-4 text-plum dark:text-pink-400" />
                 <span>Earn +{Math.floor(grandTotal / 100)} Kipchimatt Loyalty Points on this order!</span>
               </div>
 

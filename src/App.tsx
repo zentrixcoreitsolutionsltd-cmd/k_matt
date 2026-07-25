@@ -937,34 +937,57 @@ export default function App() {
     return newOrder;
   };
 
-  const handleLoginCustomer = (phone: string) => {
-    const phoneKey = phone.trim().toLowerCase();
+  const handleSaveCustomer = (cust: Customer) => {
+    const phoneKey = cust.phone.trim().toLowerCase();
+    const customersJson = localStorage.getItem('kipchimatt_customers');
+    const customers: Record<string, Customer> = customersJson ? JSON.parse(customersJson) : {};
+    customers[phoneKey] = cust;
+    localStorage.setItem('kipchimatt_customers', JSON.stringify(customers));
+    setCurrentCustomer(cust);
+  };
+
+  const handleLoginCustomer = (phoneOrEmail: string, password?: string): boolean => {
+    const searchKey = phoneOrEmail.trim().toLowerCase();
     
     // Check persistent customers records
     const customersJson = localStorage.getItem('kipchimatt_customers');
     const customers: Record<string, Customer> = customersJson ? JSON.parse(customersJson) : {};
-    const existingCustomer = customers[phoneKey];
+    
+    // Find by phone or email
+    const existingCustomer = Object.values(customers).find(
+      c => c.phone.trim().toLowerCase() === searchKey || (c.email && c.email.trim().toLowerCase() === searchKey)
+    );
 
     if (existingCustomer) {
+      if (password && existingCustomer.password && existingCustomer.password !== password) {
+        showToast('Incorrect password. Please verify and try again.', 'error');
+        return false;
+      }
       setCurrentCustomer(existingCustomer);
       showToast(`Welcome back, ${existingCustomer.name}!`, 'success');
+      return true;
     } else {
-      const matchedOrder = orders.find(o => o.customer.phone.trim().toLowerCase() === phoneKey);
+      const matchedOrder = orders.find(
+        o => o.customer.phone.trim().toLowerCase() === searchKey || (o.customer.email && o.customer.email.trim().toLowerCase() === searchKey)
+      );
       if (matchedOrder) {
         setCurrentCustomer(matchedOrder.customer);
         showToast(`Welcome back, ${matchedOrder.customer.name}!`, 'success');
+        return true;
       } else {
         const newCust: Customer = {
           name: 'Valued Customer',
-          phone: phone,
+          phone: phoneOrEmail,
           email: '',
           address: '',
           city: '',
           county: deliveryLocation,
-          points: 0
+          points: 120,
+          isVerified: true
         };
-        setCurrentCustomer(newCust);
-        showToast(`New profile created for ${phone}! Earn loyalty points on purchases.`, 'success');
+        handleSaveCustomer(newCust);
+        showToast(`Signed in with profile for ${phoneOrEmail}!`, 'success');
+        return true;
       }
     }
   };
@@ -1126,6 +1149,7 @@ export default function App() {
           }}
           orders={orders}
           currentCustomer={currentCustomer}
+          onOpenAuthModal={() => setUserProfileOpen(true)}
         />
       )}
 
@@ -1210,9 +1234,9 @@ export default function App() {
                 <button 
                   type="button"
                   onClick={() => window.dispatchEvent(new Event('open-cookie-preferences'))}
-                  className="hover:text-yellow transition-colors text-left cursor-pointer flex items-center gap-1.5 font-extrabold text-yellow"
+                  className="hover:text-white transition-colors text-left cursor-pointer flex items-center gap-1.5 font-extrabold text-white"
                 >
-                  <Cookie className="w-3.5 h-3.5 text-yellow" />
+                  <Cookie className="w-3.5 h-3.5 text-white" />
                   <span>Privacy Policy & Cookies</span>
                 </button>
               </div>
@@ -1230,9 +1254,9 @@ export default function App() {
                 <button 
                   type="button"
                   onClick={() => window.dispatchEvent(new Event('open-cookie-preferences'))}
-                  className="hover:text-yellow transition-colors text-left cursor-pointer flex items-center gap-1 text-yellow font-extrabold"
+                  className="hover:text-white transition-colors text-left cursor-pointer flex items-center gap-1 text-white font-extrabold"
                 >
-                  <Cookie className="w-3.5 h-3.5 text-yellow" />
+                  <Cookie className="w-3.5 h-3.5 text-white" />
                   <span>Manage Cookie Preferences</span>
                 </button>
                 <button 
@@ -1369,7 +1393,7 @@ export default function App() {
       {comparedProducts.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-black/95 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-6 z-40 border border-white/10 max-w-[95vw] md:max-w-xl transition-all duration-300">
           <div className="flex-1">
-            <h4 className="text-xs font-black uppercase tracking-wider text-yellow">Compare Tray</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-white">Compare Tray</h4>
             <span className="text-[10px] text-gray-300 font-bold">{comparedProducts.length} of 3 items selected</span>
             <div className="flex gap-2 mt-1.5">
               {comparedProducts.map(p => (
@@ -1424,6 +1448,7 @@ export default function App() {
         onClose={() => setUserProfileOpen(false)}
         customer={currentCustomer}
         orders={orders}
+        onSaveCustomer={handleSaveCustomer}
         onLoginCustomer={handleLoginCustomer}
         onLogoutCustomer={handleLogoutCustomer}
         onViewReceipt={(order) => setSelectedReceiptOrder(order)}
@@ -1588,7 +1613,7 @@ export default function App() {
 
             <div className="space-y-2">
               <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center justify-center gap-1.5">
-                <Sparkles className="w-5 h-5 text-yellow fill-yellow animate-pulse" />
+                <Sparkles className="w-5 h-5 text-white fill-white animate-pulse" />
                 <span>Demand is Extremely High!</span>
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">

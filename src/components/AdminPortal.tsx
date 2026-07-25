@@ -438,12 +438,12 @@ export default function AdminPortal({
         <header className="bg-plum text-white border-b border-plum-dark px-4 sm:px-8 py-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-plum-dark text-white flex items-center justify-center font-black shadow-inner border border-white/20">
-              <Laptop className="w-5 h-5 text-yellow" />
+              <Laptop className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-base text-white">{settings.storeName}</span>
-                <span className="bg-yellow text-slate-950 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full">
+                <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-white/30">
                   Multi-Admin OS
                 </span>
               </div>
@@ -455,9 +455,9 @@ export default function AdminPortal({
             <button
               type="button"
               onClick={onSwitchToStorefront}
-              className="bg-plum-dark hover:bg-plum text-yellow border border-yellow/30 font-extrabold text-xs px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+              className="bg-plum-dark hover:bg-plum text-white border border-white/30 font-extrabold text-xs px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-sm"
             >
-              <Eye className="w-4 h-4 text-yellow" />
+              <Eye className="w-4 h-4 text-white" />
               <span>Return to Storefront</span>
             </button>
           )}
@@ -466,8 +466,8 @@ export default function AdminPortal({
         {/* Multi-Admin Login Form Center */}
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="w-full max-w-lg bg-white dark:bg-gray-900 border border-plum/20 dark:border-plum/40 rounded-3xl p-8 shadow-2xl space-y-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-plum/10 text-plum dark:text-yellow border border-plum/30 flex items-center justify-center mx-auto shadow-inner">
-              <ShieldCheck className="w-8 h-8 text-plum dark:text-yellow" />
+            <div className="w-16 h-16 rounded-2xl bg-plum/10 text-plum dark:text-pink-400 border border-plum/30 flex items-center justify-center mx-auto shadow-inner">
+              <ShieldCheck className="w-8 h-8 text-plum dark:text-pink-400" />
             </div>
             <div>
               <h2 className="text-2xl font-black text-gray-900 dark:text-white">Administrator Portal</h2>
@@ -478,7 +478,7 @@ export default function AdminPortal({
             {adminUsers.length > 0 && (
               <div className="text-left bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-plum dark:text-yellow" />
+                  <Users className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
                   <span>Configured Admin Profiles (Click to Auto-fill)</span>
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
@@ -492,7 +492,7 @@ export default function AdminPortal({
                       }}
                       className={`text-left p-2 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${loginEmail === u.email ? 'bg-plum text-white font-bold border-plum' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'}`}
                     >
-                      <div className="w-6 h-6 rounded-full bg-plum/10 text-plum dark:text-yellow font-black text-[10px] flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-plum/10 text-plum dark:text-pink-400 font-black text-[10px] flex items-center justify-center shrink-0">
                         {u.name.charAt(0)}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -544,7 +544,7 @@ export default function AdminPortal({
                 type="submit"
                 className="w-full bg-plum hover:bg-plum-dark text-white font-black text-sm uppercase tracking-wider py-3.5 rounded-xl transition-all cursor-pointer shadow-lg active:scale-98 flex items-center justify-center gap-2"
               >
-                <Lock className="w-4 h-4 text-yellow" />
+                <Lock className="w-4 h-4 text-white" />
                 <span>Sign In to Admin OS</span>
               </button>
             </form>
@@ -554,7 +554,7 @@ export default function AdminPortal({
               <button
                 type="button"
                 onClick={onSwitchToStorefront}
-                className="text-[11px] text-plum dark:text-yellow font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                className="text-[11px] text-plum dark:text-pink-400 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
               >
                 <span>Back to Storefront</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -570,7 +570,7 @@ export default function AdminPortal({
   const getRoleBadge = (r: AdminRole) => {
     switch(r) {
       case 'super_admin':
-        return <span className="bg-yellow text-slate-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-yellow/30">Super Admin</span>;
+        return <span className="bg-white/20 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-white/30">Super Admin</span>;
       case 'inventory_manager':
         return <span className="bg-amber-500/20 text-amber-300 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-amber-500/30">Inventory Manager</span>;
       case 'order_manager':
@@ -593,7 +593,7 @@ export default function AdminPortal({
           <div className="flex items-center justify-between w-full md:w-auto gap-3">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-plum-dark text-white flex items-center justify-center font-black shadow-inner border border-white/20 shrink-0">
-                <Laptop className="w-5 h-5 text-yellow" />
+                <Laptop className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -601,7 +601,7 @@ export default function AdminPortal({
                   {getRoleBadge(role)}
                 </div>
                 <p className="text-[10px] text-gray-200 font-medium truncate max-w-xs">
-                  Logged in as: <strong className="text-yellow">{currentAdmin?.name || 'Admin'}</strong> ({currentAdmin?.email || 'zentrixcoreitsolutionsltd@gmail.com'})
+                  Logged in as: <strong className="text-white">{currentAdmin?.name || 'Admin'}</strong> ({currentAdmin?.email || 'zentrixcoreitsolutionsltd@gmail.com'})
                 </p>
               </div>
             </div>
@@ -612,7 +612,7 @@ export default function AdminPortal({
                 <button
                   type="button"
                   onClick={onSwitchToStorefront}
-                  className="bg-yellow text-slate-950 font-black p-2 rounded-xl"
+                  className="bg-white text-plum font-black p-2 rounded-xl"
                   title="Storefront"
                 >
                   <Eye className="w-4 h-4" />
@@ -626,12 +626,12 @@ export default function AdminPortal({
             
             {/* Active Admin Details Chip */}
             <div className="hidden lg:flex items-center gap-2 bg-plum-dark border border-white/10 px-3 py-1.5 rounded-xl text-xs text-gray-200">
-              <div className="w-6 h-6 rounded-full bg-yellow text-slate-950 font-black text-[10px] flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-white text-plum font-black text-[10px] flex items-center justify-center">
                 {currentAdmin?.name?.charAt(0) || 'A'}
               </div>
               <div>
                 <p className="text-[10px] font-bold text-white leading-none">{currentAdmin?.department || 'Operations'}</p>
-                <p className="text-[9px] text-yellow">Multi-Admin Secured</p>
+                <p className="text-[9px] text-white/80">Multi-Admin Secured</p>
               </div>
             </div>
 
@@ -640,12 +640,12 @@ export default function AdminPortal({
               <button
                 type="button"
                 onClick={onSwitchToStorefront}
-                className="bg-yellow hover:bg-yellow-dark text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+                className="bg-white hover:bg-gray-100 text-plum font-black text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
                 title="View Live Storefront as a customer"
               >
-                <Eye className="w-4 h-4 text-slate-950" />
+                <Eye className="w-4 h-4 text-plum" />
                 <span className="hidden sm:inline">Return to Storefront</span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-950" />
+                <ArrowRight className="w-3.5 h-3.5 text-plum" />
               </button>
             )}
 
@@ -657,7 +657,7 @@ export default function AdminPortal({
                 className="p-2 bg-plum-dark hover:bg-plum-dark/80 text-white rounded-xl transition-colors cursor-pointer border border-white/10 shrink-0"
                 title="Toggle Dark / Light Theme"
               >
-                {isDark ? <Sun className="w-4 h-4 text-yellow" /> : <Moon className="w-4 h-4 text-gray-300" />}
+                {isDark ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-300" />}
               </button>
             )}
 
@@ -671,7 +671,7 @@ export default function AdminPortal({
               className="bg-plum-dark hover:bg-red-600 hover:text-white text-white font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer border border-white/10 flex items-center gap-1.5 shrink-0"
               title="Sign Out of Admin"
             >
-              <LogOut className="w-3.5 h-3.5 text-yellow" />
+              <LogOut className="w-3.5 h-3.5 text-white" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
@@ -735,9 +735,9 @@ export default function AdminPortal({
               onClick={() => setActiveTab('admins')}
               className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'admins' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
             >
-              <Users className="w-4 h-4 text-yellow" />
+              <Users className="w-4 h-4 text-white" />
               <span>Admin Management</span>
-              <span className="bg-yellow/20 text-yellow text-xs px-2 py-0.5 rounded-full font-bold">{adminUsers.length}</span>
+              <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full font-bold">{adminUsers.length}</span>
             </button>
           )}
 
@@ -788,7 +788,7 @@ export default function AdminPortal({
                   }}
                   className="bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 text-yellow" />
+                  <Plus className="w-4 h-4 text-white" />
                   <span>Add New Product</span>
                 </button>
               )}
@@ -1041,7 +1041,7 @@ export default function AdminPortal({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-lg text-plum dark:text-yellow">{formatMoney(order.total)}</span>
+                        <span className="font-black text-lg text-plum dark:text-pink-400">{formatMoney(order.total)}</span>
                         {!isReadOnly && (
                           <select 
                             value={order.status}
@@ -1123,7 +1123,7 @@ export default function AdminPortal({
 
               <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 space-y-1">
                 <p className="text-xs text-gray-500 font-bold uppercase">Total Catalog Items</p>
-                <p className="text-2xl font-black text-plum dark:text-yellow">{products.length}</p>
+                <p className="text-2xl font-black text-plum dark:text-pink-400">{products.length}</p>
                 <p className="text-[10px] text-gray-400">Active active inventory SKUs</p>
               </div>
             </div>
@@ -1216,7 +1216,7 @@ export default function AdminPortal({
                 }}
                 className="bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
               >
-                <UserPlus className="w-4 h-4 text-yellow" />
+                <UserPlus className="w-4 h-4 text-white" />
                 <span>Add New Admin User</span>
               </button>
             </div>
@@ -1341,7 +1341,7 @@ export default function AdminPortal({
                       <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-plum text-yellow font-black text-xs flex items-center justify-center shrink-0 border border-plum/30">
+                            <div className="w-9 h-9 rounded-full bg-plum text-white font-black text-xs flex items-center justify-center shrink-0 border border-plum/30">
                               {u.name.charAt(0)}
                             </div>
                             <div>
@@ -1499,7 +1499,7 @@ export default function AdminPortal({
                   onClick={handleExportAuditLogsCSV}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-3.5 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Download className="w-4 h-4 text-yellow" />
+                  <Download className="w-4 h-4 text-white" />
                   <span>Export CSV Log</span>
                 </button>
 

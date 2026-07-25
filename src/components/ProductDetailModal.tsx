@@ -104,7 +104,7 @@ export default function ProductDetailModal({
         {/* Modal Header Bar */}
         <div className="p-4 border-b border-gray-150 dark:border-gray-800 flex items-center justify-between bg-plum text-white">
           <div className="flex items-center gap-2">
-            <span className="bg-yellow/20 text-yellow text-xs px-2.5 py-1 rounded-md font-extrabold uppercase">
+            <span className="bg-white/20 text-white text-xs px-2.5 py-1 rounded-md font-extrabold uppercase">
               {product.brand || 'Kipchimatt'}
             </span>
             <span className="text-xs text-white/80 font-bold uppercase tracking-wider">
@@ -238,7 +238,7 @@ export default function ProductDetailModal({
                         </>
                       ) : (
                         <>
-                          <ShoppingCart className="w-4 h-4 text-yellow" />
+                          <ShoppingCart className="w-4 h-4 text-white" />
                           <span>Add {qty} Item(s) — {formatMoney(product.price * qty)}</span>
                         </>
                       )}

@@ -53,6 +53,7 @@ export default function Storefront({
   const beverageRef = useRef<HTMLDivElement>(null);
   const liquorRef = useRef<HTMLDivElement>(null);
   const categoryRef = useRef<HTMLDivElement>(null);
+  const brandsRef = useRef<HTMLDivElement>(null);
 
   // Quick feedback state for Add to Cart
   const [addedProductId, setAddedProductId] = useState<number | null>(null);
@@ -600,7 +601,7 @@ export default function Storefront({
                 }}
               >
                 <div className="max-w-xl text-white space-y-2 relative z-10">
-                  <span className="text-[10px] font-black uppercase tracking-widest bg-yellow-400 text-gray-900 px-3 py-1 rounded-full inline-block mb-1 shadow-md">
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-white text-gray-950 px-3 py-1 rounded-full inline-block mb-1 shadow-md">
                     Featured Category
                   </span>
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight drop-shadow-md text-white">
@@ -609,7 +610,7 @@ export default function Storefront({
                   <p className="text-xs sm:text-sm text-gray-150 leading-relaxed font-semibold drop-shadow max-w-lg opacity-90">
                     {currentBanner.subtitle}
                   </p>
-                  <div className="flex items-center gap-2 pt-2 text-[10px] font-bold text-yellow-300 uppercase tracking-widest">
+                  <div className="flex items-center gap-2 pt-2 text-[10px] font-bold text-white/90 uppercase tracking-widest">
                     <span>Express 45-Min Shipping</span>
                     <span>•</span>
                     <span>100% Quality Guaranteed</span>
@@ -718,7 +719,7 @@ export default function Storefront({
                     <h2 className="text-sm sm:text-base font-black text-plum dark:text-pink-300 flex items-center gap-2">
                       <span>Shop by Category</span>
                       <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-plum/10 text-plum dark:text-pink-300 px-2.5 py-0.5 rounded-full">
-                        <Sparkles className="w-3 h-3 text-yellow fill-yellow" />
+                        <Sparkles className="w-3 h-3 text-white fill-white" />
                         Swipe to explore
                       </span>
                     </h2>
@@ -1080,34 +1081,86 @@ export default function Storefront({
               </div>
             </section>
 
-            {/* Shop by Brand Sections */}
-            <section className="py-6 border-t border-gray-150 mt-4" id="brands-section">
-              <div className="mb-6">
-                <h2 className="text-base font-extrabold text-black dark:text-black flex items-center gap-2">
-                  <Star className="w-5 h-5 text-plum fill-plum" />
-                  <span className="text-black dark:text-black">Shop by Brand</span>
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-xs mt-0.5">Explore by selecting your favorite domestic or international brand.</p>
+            {/* Shop by Brand Sections - Compact & Swipeable across all screen sizes */}
+            <section className="py-6 border-t border-gray-150 dark:border-gray-800 mt-4" id="brands-section">
+              <div className="flex items-center justify-between mb-4 bg-white dark:bg-gray-900 p-3.5 sm:p-4 rounded-2xl border-l-4 border-l-plum border border-gray-200 dark:border-gray-800 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-plum text-white flex items-center justify-center shadow-md">
+                    <Star className="w-4.5 h-4.5 fill-white text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-black text-plum dark:text-pink-300 flex items-center gap-2">
+                      <span>Shop by Brand</span>
+                      <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold bg-plum/10 text-plum dark:text-pink-300 px-2.5 py-0.5 rounded-full">
+                        <Sparkles className="w-3 h-3 text-plum dark:text-pink-300 fill-plum" />
+                        Swipe to browse ({Array.from(new Set(products.map(p => p.brand).filter(Boolean))).length} Brands)
+                      </span>
+                    </h2>
+                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-medium">
+                      Explore top local & international brands available at Kipchimatt
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-plum dark:text-pink-300 font-bold mr-1 flex items-center gap-1">
+                    <span>Swipe</span>
+                    <ChevronRight className="w-3.5 h-3.5 animate-pulse" />
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button 
+                      onClick={() => scrollCarousel(brandsRef, -1)}
+                      className="w-8 h-8 rounded-xl border border-plum/30 bg-white dark:bg-gray-800 text-plum dark:text-pink-300 hover:bg-plum hover:text-white flex items-center justify-center active:scale-95 cursor-pointer shadow-xs transition-colors"
+                      aria-label="Scroll brands left"
+                      title="Scroll Left"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => scrollCarousel(brandsRef, 1)}
+                      className="w-8 h-8 rounded-xl border border-plum/30 bg-white dark:bg-gray-800 text-plum dark:text-pink-300 hover:bg-plum hover:text-white flex items-center justify-center active:scale-95 cursor-pointer shadow-xs transition-colors"
+                      aria-label="Scroll brands right"
+                      title="Scroll Right"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="bg-gray-50/50 dark:bg-gray-950/20 p-6 rounded-2xl border border-gray-150 dark:border-gray-800">
-                <div className="flex flex-wrap gap-2.5 justify-center md:justify-start">
-                  {Array.from(
-                    new Set(
-                      products
-                        .map(p => p.brand)
-                        .filter(Boolean)
-                    )
-                  ).sort((a, b) => a.localeCompare(b)).map(brand => (
+              {/* Swipeable track */}
+              <div 
+                ref={brandsRef}
+                className="flex overflow-x-auto snap-x snap-mandatory gap-3 sm:gap-4 pb-3 pt-1 px-1 scroll-smooth no-scrollbar select-none touch-pan-x cursor-grab active:cursor-grabbing"
+              >
+                {Array.from(
+                  new Set(
+                    products
+                      .map(p => p.brand)
+                      .filter(Boolean)
+                  )
+                ).sort((a, b) => a.localeCompare(b)).map(brand => {
+                  const count = products.filter(p => p.brand === brand).length;
+                  return (
                     <button
                       key={brand}
                       onClick={() => onBrandSelect(brand)}
-                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-plum hover:text-plum font-extrabold text-xs px-5 py-2.5 rounded-full cursor-pointer transition-all shadow-sm hover:shadow-md active:scale-95 text-black dark:text-black"
+                      className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-plum dark:hover:border-pink-400 p-3 sm:p-3.5 rounded-2xl cursor-pointer transition-all shadow-xs hover:shadow-md active:scale-95 flex items-center gap-3 shrink-0 snap-start min-w-[140px] sm:min-w-[170px] max-w-[210px] group text-left"
                     >
-                      {brand}
+                      <div className="w-9 h-9 rounded-xl bg-plum/10 dark:bg-pink-950/40 text-plum dark:text-pink-300 font-black text-sm flex items-center justify-center shrink-0 group-hover:bg-plum group-hover:text-white transition-colors border border-plum/15 dark:border-pink-500/20">
+                        {brand.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="block font-black text-xs sm:text-sm text-gray-900 dark:text-white truncate group-hover:text-plum dark:group-hover:text-pink-300 transition-colors">
+                          {brand}
+                        </span>
+                        <span className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5">
+                          {count} {count === 1 ? 'Product' : 'Products'}
+                        </span>
+                      </div>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </section>
           </>

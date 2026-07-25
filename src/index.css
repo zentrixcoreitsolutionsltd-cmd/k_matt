@@ -5,7 +5,7 @@
   --color-plum-dark: #581836;
   --color-plum-fade: #f9f2f5;
   --color-orange: #f26522;
-  --color-yellow: #ffc20e;
+  --color-yellow: #ffffff;
   --color-green: #00875a;
   --color-green-light: #36b37e;
   --color-red: #de350b;
@@ -35,7 +35,7 @@ body.high-contrast {
   --color-plum-dark: #2d0818;
   --color-plum-fade: #f2e6ed;
   --color-orange: #d04000;
-  --color-yellow: #d9a000;
+  --color-yellow: #ffffff;
   --color-green: #006644;
   --color-red: #b30000;
 }

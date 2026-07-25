@@ -75,7 +75,7 @@ export default function WishlistSidebar({
               onClick={onSimulateAlert}
               className="bg-plum text-white hover:bg-plum-dark text-[10px] font-extrabold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
             >
-              <Sparkles className="w-3 h-3 text-yellow" />
+              <Sparkles className="w-3 h-3 text-white" />
               <span>Test Price Drop Alert</span>
             </button>
           </div>
@@ -134,7 +134,7 @@ export default function WishlistSidebar({
               onClick={handleMoveAll}
               className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2.5 cursor-pointer active:scale-98 hover:scale-[1.01]"
             >
-              <ShoppingCart className="w-4 h-4 text-yellow" />
+              <ShoppingCart className="w-4 h-4 text-white" />
               <span>Move All ({wishedProducts.length}) to Shopping Cart</span>
             </button>
           </div>

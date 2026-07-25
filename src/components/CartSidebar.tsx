@@ -48,7 +48,7 @@ export default function CartSidebar({
         {/* Header */}
         <div className="p-5 border-b border-gray-150 dark:border-gray-800 bg-plum text-white flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <ShoppingCart className="w-5 h-5 text-yellow" />
+            <ShoppingCart className="w-5 h-5 text-white" />
             <h2 className="font-extrabold text-base tracking-tight">Your Shopping Basket</h2>
             <span className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-full">
               {cart.reduce((sum, i) => sum + i.qty, 0)}
@@ -85,7 +85,7 @@ export default function CartSidebar({
                 <div className="w-16 h-16 rounded-2xl bg-plum/10 dark:bg-plum/20 text-plum dark:text-pink-400 flex items-center justify-center shadow-inner">
                   <ShoppingCart className="w-8 h-8" />
                 </div>
-                <div className="absolute -top-1.5 -right-1.5 bg-yellow text-plum p-1 rounded-full shadow-md">
+                <div className="absolute -top-1.5 -right-1.5 bg-white text-plum p-1 rounded-full shadow-md">
                   <Sparkles className="w-3 h-3" />
                 </div>
               </div>
@@ -101,7 +101,7 @@ export default function CartSidebar({
                 onClick={onClose}
                 className="mt-1 inline-flex items-center gap-2 bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-2.5 px-5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
               >
-                <ArrowLeft className="w-3.5 h-3.5 text-yellow" />
+                <ArrowLeft className="w-3.5 h-3.5 text-white" />
                 <span>Back to Shopping</span>
               </button>
             </div>
@@ -180,7 +180,7 @@ export default function CartSidebar({
 
               <div className="space-y-2.5">
                 {savedForLater.map((savedItem) => (
-                  <div key={savedItem.id} className="flex gap-2.5 p-2.5 bg-amber-50/50 dark:bg-gray-800/80 border border-amber-200/60 dark:border-gray-700/80 rounded-2xl items-center">
+                  <div key={savedItem.id} className="flex gap-2.5 p-2.5 bg-plum/5 dark:bg-gray-800/80 border border-plum/15 dark:border-gray-700/80 rounded-2xl items-center">
                     <img 
                       src={savedItem.image} 
                       alt={savedItem.name} 
@@ -202,7 +202,7 @@ export default function CartSidebar({
                           className="bg-plum hover:bg-plum-dark text-white text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
                           title="Move back to active basket"
                         >
-                          <ShoppingCart className="w-3 h-3 text-yellow" />
+                          <ShoppingCart className="w-3 h-3 text-white" />
                           <span>Move to Basket</span>
                         </button>
                       )}

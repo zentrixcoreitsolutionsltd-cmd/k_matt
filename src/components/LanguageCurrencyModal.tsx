@@ -75,13 +75,13 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
         {/* Modal Header */}
         <div className="bg-plum dark:bg-gray-950 text-white p-4 sm:p-5 flex items-center justify-between border-b border-white/10 relative">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 text-yellow shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 text-white shadow-inner">
               <Globe className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-black text-base sm:text-lg tracking-tight text-white flex items-center gap-2">
                 <span>{t('language_currency')}</span>
-                <span className="text-[10px] bg-yellow text-gray-950 px-2 py-0.5 rounded-full font-black uppercase">
+                <span className="text-[10px] bg-white text-gray-950 px-2 py-0.5 rounded-full font-black uppercase">
                   Global
                 </span>
               </h3>
@@ -153,8 +153,8 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
           {/* Section 2: Choose Currency */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-black uppercase tracking-wider text-plum dark:text-yellow flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-plum dark:text-yellow" />
+              <label className="text-xs font-black uppercase tracking-wider text-plum dark:text-pink-400 flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-plum dark:text-pink-400" />
                 <span>Select Currency & Cost</span>
               </label>
               <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
@@ -171,7 +171,7 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
                     onClick={() => handleSelectCurrency(curr.code)}
                     className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-500 text-amber-950 dark:text-amber-300 shadow-sm ring-1 ring-amber-500/20'
+                        ? 'bg-plum/10 dark:bg-pink-950/40 border-plum dark:border-pink-500 text-plum dark:text-pink-300 shadow-sm ring-1 ring-plum/20'
                         : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-750 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}
                   >
@@ -180,7 +180,7 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
                       <div className="min-w-0">
                         <p className="font-black text-xs sm:text-sm leading-tight truncate flex items-center gap-1">
                           <span>{curr.code}</span>
-                          <span className="text-amber-600 dark:text-amber-400 font-extrabold">({curr.symbol})</span>
+                          <span className="text-plum dark:text-pink-300 font-extrabold">({curr.symbol})</span>
                         </p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
                           {curr.name}
@@ -190,7 +190,7 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
 
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       {isSelected ? (
-                        <div className="w-5 h-5 rounded-full bg-amber-500 text-gray-950 flex items-center justify-center font-black">
+                        <div className="w-5 h-5 rounded-full bg-plum dark:bg-pink-500 text-white flex items-center justify-center font-black">
                           <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       ) : (
@@ -208,7 +208,7 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
           {/* Sync & Helper Callout */}
           <div className="p-3 bg-plum/5 dark:bg-gray-800 rounded-xl border border-plum/10 dark:border-gray-700 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-plum dark:text-yellow shrink-0" />
+              <Sparkles className="w-4 h-4 text-plum dark:text-white shrink-0" />
               <div>
                 <p className="text-xs font-bold text-gray-900 dark:text-white">
                   Match Currency & Language Automatically
@@ -243,7 +243,7 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
               {LANGUAGES.find(l => l.code === selectedLang)?.flag} {selectedLang.toUpperCase()}
             </strong>
             <span>•</span>
-            <strong className="text-amber-600 dark:text-yellow font-extrabold">
+            <strong className="text-plum dark:text-white font-extrabold">
               {CURRENCIES[selectedCurrency]?.code} ({CURRENCIES[selectedCurrency]?.symbol})
             </strong>
           </div>

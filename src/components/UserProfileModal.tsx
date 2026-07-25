@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, User, Phone, Mail, MapPin, Award, RotateCcw, ShoppingCart, 
   Crown, Lock, CheckCircle2, Copy, Check, Sparkles, ChevronRight, Zap,
   Printer, FileText, UserPlus, KeyRound, LogOut, Download, AlertCircle,
-  History, TrendingUp, TrendingDown, Clock, Calendar, ArrowRight
+  History, TrendingUp, TrendingDown, Clock, Calendar, ArrowRight,
+  ShieldCheck, Eye, EyeOff, MessageSquareCode, LogIn, RefreshCw
 } from 'lucide-react';
 import { Customer, Order, CartItem } from '../types';
 import { formatMoney } from '../data/catalog';
@@ -53,9 +54,9 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     minPoints: 500,
     maxPoints: 999,
     icon: '🥇',
-    badgeBg: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-300 border-yellow-400',
-    textColor: 'text-yellow-600 dark:text-amber-300',
-    bgGradient: 'from-amber-500 via-yellow-600 to-amber-700',
+    badgeBg: 'bg-plum/10 text-plum dark:bg-plum/30 dark:text-pink-300 border-plum/30',
+    textColor: 'text-plum dark:text-pink-300',
+    bgGradient: 'from-plum via-pink-600 to-plum-dark',
     discountDesc: 'Redeem points directly + Express Same-Day Delivery',
     perks: ['Dedicated support helpline', 'Exclusive early flash sale access']
   },
@@ -80,7 +81,7 @@ interface UserProfileModalProps {
   orders?: Order[];
   userOrders?: Order[];
   onSaveCustomer?: (c: Customer) => void;
-  onLoginCustomer?: (phone: string) => void;
+  onLoginCustomer?: (phoneOrEmail: string, password?: string) => boolean;
   onLogoutCustomer?: () => void;
   onReorderCart?: (items: CartItem[]) => void;
   onViewReceipt?: (order: Order) => void;
@@ -103,14 +104,20 @@ export default function UserProfileModal({
   const activeOrders = orders || userOrders || [];
   const previousFiveOrders = activeOrders.slice(0, 5);
 
+  // Profile Edit State
   const [name, setName] = useState(customer?.name || '');
   const [phone, setPhone] = useState(customer?.phone || '');
   const [email, setEmail] = useState(customer?.email || '');
   const [address, setAddress] = useState(customer?.address || '');
   const [county, setCounty] = useState(customer?.county || 'Nairobi');
-  
-  // Tab and Auth states
-  const [activeTab, setActiveTab] = useState<'profile' | 'loyalty' | 'points_history' | 'orders' | 'create_account'>('profile');
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Navigation Tab
+  type TabType = 'profile' | 'loyalty' | 'points_history' | 'orders' | 'sign_in' | 'create_account';
+  const [activeTab, setActiveTab] = useState<TabType>(customer ? 'profile' : 'sign_in');
+
+  // Registration Form State
   const [regName, setRegName] = useState('');
   const [regPhone, setRegPhone] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -118,11 +125,44 @@ export default function UserProfileModal({
   const [regAddress, setRegAddress] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [showRegPassword, setShowRegPassword] = useState(false);
   const [optInLoyalty, setOptInLoyalty] = useState(true);
+
+  // Registration OTP State
+  const [regOtpStep, setRegOtpStep] = useState<'details' | 'otp_sent'>('details');
+  const [generatedRegOtp, setGeneratedRegOtp] = useState('');
+  const [userEnteredRegOtp, setUserEnteredRegOtp] = useState('');
+
+  // Login Form State
+  const [loginPhoneOrEmail, setLoginPhoneOrEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
+  const [loginOtpStep, setLoginOtpStep] = useState<'input' | 'otp_sent'>('input');
+  const [loginGeneratedOtp, setLoginGeneratedOtp] = useState('');
+  const [loginEnteredOtp, setLoginEnteredOtp] = useState('');
+
+  // Update form fields when customer prop changes
+  useEffect(() => {
+    if (customer) {
+      setName(customer.name || '');
+      setPhone(customer.phone || '');
+      setEmail(customer.email || '');
+      setAddress(customer.address || '');
+      setCounty(customer.county || 'Nairobi');
+      if (activeTab === 'sign_in' || activeTab === 'create_account') {
+        setActiveTab('profile');
+      }
+    } else {
+      if (activeTab === 'profile' || activeTab === 'loyalty' || activeTab === 'points_history' || activeTab === 'orders') {
+        setActiveTab('sign_in');
+      }
+    }
+  }, [customer]);
 
   if (!isOpen) return null;
 
-  const points = customer?.points ?? 120;
+  const points = customer?.points ?? 0;
   const currentTier = LOYALTY_TIERS.find(t => points >= t.minPoints && points <= t.maxPoints) || LOYALTY_TIERS[0];
   const currentTierIndex = LOYALTY_TIERS.findIndex(t => t.id === currentTier.id);
   const nextTier = LOYALTY_TIERS[currentTierIndex + 1];
@@ -136,35 +176,73 @@ export default function UserProfileModal({
     pointsNeeded = nextTier.minPoints - points;
   }
 
-  const handleSave = (e: React.FormEvent) => {
+  // Handle Save Profile Updates
+  const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSaveCustomer) {
-      onSaveCustomer({
-        name,
-        phone,
-        email,
-        address,
-        city: county,
-        county,
-        points: customer?.points ?? 120
-      });
+    if (!name.trim() || !phone.trim()) {
+      if (onShowToast) onShowToast('Name and Phone Number are required.', 'error');
+      return;
     }
-    if (onShowToast) onShowToast('Profile details updated successfully!', 'success');
-    onClose();
+    if (newPassword && newPassword.length < 8) {
+      if (onShowToast) onShowToast('New password must be a strong password with at least 8 characters.', 'error');
+      return;
+    }
+    const updatedCust: Customer = {
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      address: address.trim(),
+      city: county,
+      county,
+      points,
+      password: newPassword ? newPassword : customer?.password,
+      isVerified: true
+    };
+    if (onSaveCustomer) {
+      onSaveCustomer(updatedCust);
+    }
+    if (onShowToast) onShowToast('Profile details & password updated successfully!', 'success');
   };
 
-  const handleCreateAccountSubmit = (e: React.FormEvent) => {
+  // Step 1 Registration: Send Verification OTP
+  const handleSendRegistrationOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName.trim() || !regPhone.trim()) {
-      if (onShowToast) onShowToast('Please provide your full name and phone number.', 'error');
+    if (!regName.trim()) {
+      if (onShowToast) onShowToast('Please enter your full name.', 'error');
       return;
     }
-    if (regPassword && regPassword !== regConfirmPassword) {
-      if (onShowToast) onShowToast('Passwords do not match. Please re-check.', 'error');
+    if (!regPhone.trim() || regPhone.trim().length < 8) {
+      if (onShowToast) onShowToast('Please enter a valid M-PESA phone number.', 'error');
+      return;
+    }
+    if (!regPassword || regPassword.length < 8) {
+      if (onShowToast) onShowToast('Password must be a strong password with at least 8 characters.', 'error');
+      return;
+    }
+    if (regPassword !== regConfirmPassword) {
+      if (onShowToast) onShowToast('Passwords do not match. Please re-enter.', 'error');
       return;
     }
 
-    const welcomeBonusPoints = optInLoyalty ? 150 : 0;
+    // Generate random 4-digit OTP code for SMS verification
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedRegOtp(otpCode);
+    setRegOtpStep('otp_sent');
+
+    if (onShowToast) {
+      onShowToast(`💬 Verification SMS sent to +254 ${regPhone}! Code: ${otpCode}`, 'info');
+    }
+  };
+
+  // Step 2 Registration: Verify OTP & Create Account
+  const handleVerifyRegistrationOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userEnteredRegOtp.trim() !== generatedRegOtp) {
+      if (onShowToast) onShowToast('Invalid OTP verification code. Check SMS simulation below.', 'error');
+      return;
+    }
+
+    const welcomePoints = optInLoyalty ? 150 : 0;
     const newCust: Customer = {
       name: regName.trim(),
       phone: regPhone.trim(),
@@ -172,137 +250,603 @@ export default function UserProfileModal({
       address: regAddress.trim(),
       city: regCounty,
       county: regCounty,
-      points: welcomeBonusPoints
+      points: welcomePoints,
+      password: regPassword,
+      isVerified: true
     };
 
     if (onSaveCustomer) {
       onSaveCustomer(newCust);
     }
-    if (onLoginCustomer) {
-      onLoginCustomer(newCust.phone);
-    }
 
     if (onShowToast) {
-      onShowToast(
-        `🎉 Account created successfully! Welcome to Kipchimatt Membership${welcomeBonusPoints > 0 ? ' (+150 Loyalty Points Earned!)' : ''}`,
-        'success'
-      );
+      onShowToast(`🎉 Phone number verified! Account created with ${welcomePoints} Welcome Loyalty Points!`, 'success');
     }
 
-    // Switch view to active profile
-    setName(newCust.name);
-    setPhone(newCust.phone);
-    setEmail(newCust.email);
-    setCounty(newCust.county);
-    setAddress(newCust.address);
+    // Reset reg state and switch to profile
+    setRegOtpStep('details');
+    setUserEnteredRegOtp('');
+    setRegPassword('');
+    setRegConfirmPassword('');
     setActiveTab('profile');
   };
 
+  // Handle Password Sign In
+  const handlePasswordLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginPhoneOrEmail.trim() || !loginPassword) {
+      if (onShowToast) onShowToast('Please enter your phone/email and password.', 'error');
+      return;
+    }
+    if (onLoginCustomer) {
+      const success = onLoginCustomer(loginPhoneOrEmail.trim(), loginPassword);
+      if (success) {
+        setLoginPassword('');
+        setActiveTab('profile');
+      }
+    }
+  };
+
+  // Handle Send Login OTP
+  const handleSendLoginOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginPhoneOrEmail.trim()) {
+      if (onShowToast) onShowToast('Please enter your phone number.', 'error');
+      return;
+    }
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+    setLoginGeneratedOtp(otpCode);
+    setLoginOtpStep('otp_sent');
+    if (onShowToast) {
+      onShowToast(`💬 Login SMS OTP sent to ${loginPhoneOrEmail}! Code: ${otpCode}`, 'info');
+    }
+  };
+
+  // Handle Verify Login OTP
+  const handleVerifyLoginOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginEnteredOtp.trim() !== loginGeneratedOtp) {
+      if (onShowToast) onShowToast('Invalid OTP code. Please check the SMS banner.', 'error');
+      return;
+    }
+    if (onLoginCustomer) {
+      const success = onLoginCustomer(loginPhoneOrEmail.trim());
+      if (success) {
+        setLoginOtpStep('input');
+        setLoginEnteredOtp('');
+        setActiveTab('profile');
+      }
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[9990] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-scale-up">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800 my-auto">
         
         {/* Header Banner */}
-        <div className="bg-plum text-white p-5 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <User className="w-5 h-5 text-yellow" />
+        <div className="bg-plum p-5 text-white flex justify-between items-center relative overflow-hidden">
+          <div className="flex items-center gap-3 z-10">
+            <div className="p-2.5 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/20">
+              <User className="w-6 h-6 text-white" />
+            </div>
             <div>
-              <h3 className="font-extrabold text-base">My Supermarket Account</h3>
-              <p className="text-[10px] text-white/80 font-medium">Manage preferences, loyalty rewards & orders</p>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-lg">
+                  {customer ? customer.name : 'Kipchimatt Member Services'}
+                </h3>
+                {customer?.isVerified && (
+                  <span className="bg-green/20 text-green-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-green-400/30 flex items-center gap-0.5">
+                    <ShieldCheck className="w-3 h-3" />
+                    Verified
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-white/80 font-medium">
+                {customer ? `Phone: ${customer.phone} | Points: ${points} PTS` : 'Sign in or register with phone OTP verification'}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-white/10 text-white cursor-pointer transition-colors">
+          <button 
+            onClick={onClose} 
+            className="p-1.5 rounded-full hover:bg-white/10 text-white cursor-pointer transition-colors z-10"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 px-3 pt-2 gap-1.5 text-xs font-bold overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`pb-2.5 px-2.5 border-b-2 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${activeTab === 'profile' ? 'border-plum text-plum dark:text-pink-400' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>Profile</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('loyalty')}
-            className={`pb-2.5 px-2.5 border-b-2 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${activeTab === 'loyalty' ? 'border-plum text-plum dark:text-pink-400' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-          >
-            <Crown className="w-3.5 h-3.5 text-yellow" />
-            <span>Loyalty Tiers</span>
-            <span className="bg-plum text-white text-[9px] px-1.5 py-0.2 rounded-full font-extrabold">{points} pts</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('points_history')}
-            className={`pb-2.5 px-2.5 border-b-2 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${activeTab === 'points_history' ? 'border-plum text-plum dark:text-pink-400 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-          >
-            <History className="w-3.5 h-3.5 text-plum" />
-            <span>Points History</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`pb-2.5 px-2.5 border-b-2 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${activeTab === 'orders' ? 'border-plum text-plum dark:text-pink-400' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-          >
-            <Printer className="w-3.5 h-3.5 text-plum" />
-            <span>5 Previous Receipts ({previousFiveOrders.length})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('create_account')}
-            className={`pb-2.5 px-2.5 border-b-2 transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${activeTab === 'create_account' ? 'border-plum text-plum dark:text-pink-400 font-extrabold' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
-          >
-            <UserPlus className="w-3.5 h-3.5 text-green" />
-            <span>Create Account</span>
-          </button>
+        <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 px-3 pt-2 gap-1 text-xs font-bold overflow-x-auto no-scrollbar">
+          {customer ? (
+            <>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'profile' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>My Profile</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('loyalty')}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'loyalty' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >
+                <Crown className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
+                <span>Loyalty Tiers</span>
+                <span className="bg-plum text-white text-[9px] px-1.5 py-0.2 rounded-full font-extrabold">{points} pts</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('points_history')}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'points_history' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >
+                <History className="w-3.5 h-3.5 text-plum" />
+                <span>Points History</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'orders' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >
+                <Printer className="w-3.5 h-3.5 text-plum" />
+                <span>Receipts ({previousFiveOrders.length})</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setActiveTab('sign_in')}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'sign_in' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >
+                <LogIn className="w-3.5 h-3.5 text-plum" />
+                <span>Sign In</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('create_account')}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'create_account' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >
+                <UserPlus className="w-3.5 h-3.5 text-green" />
+                <span>Create Account (Password + OTP)</span>
+              </button>
+            </>
+          )}
         </div>
 
-        <div className="p-6 space-y-6 text-xs max-h-[75vh] overflow-y-auto">
+        <div className="p-5 sm:p-6 space-y-6 text-xs max-h-[75vh] overflow-y-auto">
 
-          {/* QUICK REORDER PREVIOUS CART PROMINENT BANNER (Shown across tabs if past orders exist) */}
-          {activeOrders.length > 0 && activeTab !== 'create_account' && (
-            <div className="bg-gradient-to-r from-plum/10 via-purple-500/10 to-pink-500/10 dark:from-plum/20 dark:to-purple-900/30 border border-plum/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <RotateCcw className="w-4 h-4 text-plum dark:text-pink-400" />
-                  <span className="font-extrabold text-gray-900 dark:text-white text-xs uppercase tracking-wider">Reorder Previous Cart</span>
-                  <span className="bg-green/10 text-green text-[10px] px-2 py-0.5 rounded-full font-bold">
-                    Order #{activeOrders[0].id.slice(-6).toUpperCase()}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium">
-                  Populate cart with {activeOrders[0].items.length} item(s) from your last order ({formatMoney(activeOrders[0].total)}).
+          {/* TAB: SIGN IN */}
+          {!customer && activeTab === 'sign_in' && (
+            <div className="space-y-4 max-w-md mx-auto py-2">
+              <div className="text-center space-y-1">
+                <h4 className="font-black text-gray-900 dark:text-white text-base">Sign In to Your Account</h4>
+                <p className="text-gray-500 font-medium text-xs">
+                  Access your points balance, order history, and instant checkout.
                 </p>
               </div>
-              <div className="flex items-center gap-2 self-stretch sm:self-auto">
-                {onViewReceipt && (
-                  <button
-                    type="button"
-                    onClick={() => onViewReceipt(activeOrders[0])}
-                    className="bg-white dark:bg-gray-800 hover:bg-gray-100 text-plum dark:text-pink-300 border border-plum/30 font-extrabold text-xs px-3 py-2.5 rounded-xl cursor-pointer transition-all shadow-xs flex items-center gap-1.5 whitespace-nowrap"
-                    title="Print e-receipt for last order"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-plum" />
-                    <span>Print Receipt</span>
-                  </button>
-                )}
+
+              {/* Login Mode Selector */}
+              <div className="flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 text-xs font-bold">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (onReorderCart) {
-                      onReorderCart(activeOrders[0].items);
-                    }
-                  }}
-                  className="bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-all shadow-md flex items-center gap-2 whitespace-nowrap hover:scale-[1.02]"
+                  onClick={() => setLoginMode('password')}
+                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${loginMode === 'password' ? 'bg-white dark:bg-gray-700 text-plum dark:text-pink-300 shadow-xs' : 'text-gray-500'}`}
                 >
-                  <ShoppingCart className="w-4 h-4 text-yellow" />
-                  <span>Reorder</span>
+                  Password Sign In
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('otp')}
+                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${loginMode === 'otp' ? 'bg-white dark:bg-gray-700 text-plum dark:text-pink-300 shadow-xs' : 'text-gray-500'}`}
+                >
+                  Phone SMS OTP
+                </button>
+              </div>
+
+              {loginMode === 'password' ? (
+                <form onSubmit={handlePasswordLogin} className="space-y-3 pt-1">
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      Phone Number or Email
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                      <input 
+                        type="text" 
+                        value={loginPhoneOrEmail}
+                        onChange={e => setLoginPhoneOrEmail(e.target.value)}
+                        placeholder="e.g. 0712345678 or john@gmail.com"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                      <input 
+                        type={showLoginPassword ? "text" : "password"} 
+                        value={loginPassword}
+                        onChange={e => setLoginPassword(e.target.value)}
+                        placeholder="Enter your account password"
+                        className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        required
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      >
+                        {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    className="w-full bg-plum hover:bg-plum-dark text-white font-black text-xs py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <LogIn className="w-4 h-4 text-white" />
+                    <span>Sign In to Member Account</span>
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-3 pt-1">
+                  {loginOtpStep === 'input' ? (
+                    <form onSubmit={handleSendLoginOtp} className="space-y-3">
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                          Registered Phone Number (M-PESA)
+                        </label>
+                        <input 
+                          type="text" 
+                          value={loginPhoneOrEmail}
+                          onChange={e => setLoginPhoneOrEmail(e.target.value)}
+                          placeholder="e.g. 0712345678"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                          required
+                        />
+                      </div>
+                      <button 
+                        type="submit"
+                        className="w-full bg-plum hover:bg-plum-dark text-white font-black text-xs py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <MessageSquareCode className="w-4 h-4 text-white" />
+                        <span>Send Login SMS OTP</span>
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyLoginOtp} className="space-y-3">
+                      {/* SMS Simulation Banner */}
+                      <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 text-xs space-y-1 animate-pulse">
+                        <div className="flex items-center gap-1.5 font-black text-amber-900 dark:text-amber-200">
+                          <MessageSquareCode className="w-4 h-4 text-amber-600" />
+                          <span>💬 Kipchimatt SMS Dispatcher</span>
+                        </div>
+                        <p className="text-gray-800 dark:text-gray-200 font-semibold text-[11px]">
+                          Verification code for <strong>+254 {loginPhoneOrEmail}</strong> is:
+                        </p>
+                        <div className="text-center font-black text-xl tracking-widest text-plum bg-white dark:bg-gray-900 py-1.5 rounded-xl border border-amber-300">
+                          {loginGeneratedOtp}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                          Enter 4-Digit SMS Code
+                        </label>
+                        <input 
+                          type="text"
+                          maxLength={4} 
+                          value={loginEnteredOtp}
+                          onChange={e => setLoginEnteredOtp(e.target.value)}
+                          placeholder="4-Digit Code"
+                          className="w-full text-center tracking-widest text-lg font-black px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum"
+                          required
+                        />
+                      </div>
+
+                      <button 
+                        type="submit"
+                        className="w-full bg-green hover:bg-green-600 text-white font-black text-xs py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Verify OTP & Sign In</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setLoginOtpStep('input')}
+                        className="w-full text-gray-500 hover:text-gray-800 text-[11px] font-bold py-1 transition-colors"
+                      >
+                        ← Change Phone Number
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              <div className="border-t border-gray-150 dark:border-gray-800 pt-3 text-center">
+                <p className="text-gray-500 text-xs">
+                  Don't have an account?{' '}
+                  <button 
+                    onClick={() => setActiveTab('create_account')}
+                    className="text-plum dark:text-pink-400 font-extrabold underline cursor-pointer hover:text-plum-dark"
+                  >
+                    Create Account
+                  </button>
+                </p>
               </div>
             </div>
           )}
 
-          {/* TAB 1: PROFILE DETAILS */}
-          {activeTab === 'profile' && (
+          {/* TAB: CREATE ACCOUNT WITH OTP */}
+          {!customer && activeTab === 'create_account' && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-plum/10 via-pink-500/10 to-amber-500/10 border border-plum/20 rounded-2xl p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-plum text-white rounded-xl">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-gray-900 dark:text-white text-xs">New Member Loyalty Offer</h4>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300">
+                      Create a password-protected account & verify your phone to claim <strong>150 Free Welcome Points (KSh 150)</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {regOtpStep === 'details' ? (
+                <form onSubmit={handleSendRegistrationOtp} className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        Full Name *
+                      </label>
+                      <input 
+                        type="text" 
+                        value={regName}
+                        onChange={e => setRegName(e.target.value)}
+                        placeholder="e.g. Jane Wambui"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        M-PESA Phone Number *
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                        <input 
+                          type="text" 
+                          value={regPhone}
+                          onChange={e => setRegPhone(e.target.value)}
+                          placeholder="0712345678"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        Email Address (Optional)
+                      </label>
+                      <input 
+                        type="email" 
+                        value={regEmail}
+                        onChange={e => setRegEmail(e.target.value)}
+                        placeholder="jane@example.com"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        County (Kenya 47 Counties)
+                      </label>
+                      <select
+                        value={regCounty}
+                        onChange={e => setRegCounty(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-bold"
+                      >
+                        {KENYA_COUNTIES.map(c => (
+                          <option key={c.code} value={c.name}>{c.name} ({c.code})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      Estate / Street Address
+                    </label>
+                    <input 
+                      type="text" 
+                      value={regAddress}
+                      onChange={e => setRegAddress(e.target.value)}
+                      placeholder="e.g. Westlands, Mpaka Road Apt 4B"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="block text-gray-700 dark:text-gray-300 font-bold">
+                          Account Password *
+                        </label>
+                        {regPassword && (
+                          <span className={`text-[10px] font-extrabold px-1.5 py-0.2 rounded-full ${
+                            regPassword.length >= 10 && /[A-Z]/.test(regPassword) && /[0-9]/.test(regPassword)
+                              ? 'bg-green/10 text-green border border-green/30'
+                              : regPassword.length >= 8
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 border border-red-300'
+                          }`}>
+                            {regPassword.length >= 10 && /[A-Z]/.test(regPassword) && /[0-9]/.test(regPassword)
+                              ? 'Strong'
+                              : regPassword.length >= 8
+                              ? 'Good (8+ chars)'
+                              : `${regPassword.length}/8 chars`}
+                          </span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                        <input 
+                          type={showRegPassword ? "text" : "password"} 
+                          value={regPassword}
+                          onChange={e => setRegPassword(e.target.value)}
+                          placeholder="Min 8 characters"
+                          className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold text-xs"
+                          required
+                          minLength={8}
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setShowRegPassword(!showRegPassword)}
+                          className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                        >
+                          {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-1 font-medium">Must be a strong password with at least 8 characters.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        Confirm Password *
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                        <input 
+                          type={showRegPassword ? "text" : "password"} 
+                          value={regConfirmPassword}
+                          onChange={e => setRegConfirmPassword(e.target.value)}
+                          placeholder="Re-type password"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold text-xs"
+                          required
+                          minLength={8}
+                        />
+                      </div>
+                      {regConfirmPassword && regPassword !== regConfirmPassword && (
+                        <p className="text-[10px] text-red-500 mt-1 font-bold">Passwords do not match</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <input 
+                      type="checkbox"
+                      id="optInLoyalty"
+                      checked={optInLoyalty}
+                      onChange={e => setOptInLoyalty(e.target.checked)}
+                      className="w-4 h-4 accent-plum cursor-pointer rounded"
+                    />
+                    <label htmlFor="optInLoyalty" className="text-xs font-bold text-gray-800 dark:text-gray-200 cursor-pointer select-none">
+                      Opt-in to Kipchimatt Smart Loyalty Program (+150 Bonus Points)
+                    </label>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    className="w-full bg-plum hover:bg-plum-dark text-white font-black text-xs py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <MessageSquareCode className="w-4 h-4 text-white" />
+                    <span>Send Verification Code (SMS OTP)</span>
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyRegistrationOtp} className="space-y-4 max-w-md mx-auto py-2">
+                  <div className="text-center space-y-1">
+                    <h4 className="font-black text-gray-900 dark:text-white text-base">Verify Your Phone Number</h4>
+                    <p className="text-gray-500 text-xs">
+                      Enter the 4-digit verification code dispatched to <strong>+254 {regPhone}</strong>
+                    </p>
+                  </div>
+
+                  {/* SMS Simulation Callout Box */}
+                  <div className="bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 rounded-2xl p-4 text-xs space-y-2 text-center animate-pulse shadow-sm">
+                    <div className="flex items-center justify-center gap-1.5 font-black text-amber-900 dark:text-amber-200">
+                      <MessageSquareCode className="w-4 h-4 text-amber-600" />
+                      <span>💬 Kipchimatt SMS Dispatcher</span>
+                    </div>
+                    <p className="text-gray-800 dark:text-gray-200 font-semibold">
+                      Your phone verification code for Kipchimatt Membership is:
+                    </p>
+                    <div className="font-black text-2xl tracking-widest text-plum bg-white dark:bg-gray-900 py-2 rounded-xl border border-amber-300 shadow-inner">
+                      {generatedRegOtp}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1 text-center">
+                      Enter 4-Digit Code
+                    </label>
+                    <input 
+                      type="text"
+                      maxLength={4} 
+                      value={userEnteredRegOtp}
+                      onChange={e => setUserEnteredRegOtp(e.target.value)}
+                      placeholder="0000"
+                      className="w-full text-center tracking-widest text-2xl font-black px-3 py-2.5 rounded-2xl border-2 border-plum bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-plum/30"
+                      required
+                    />
+                  </div>
+
+                  <button 
+                    type="submit"
+                    className="w-full bg-green hover:bg-green-600 text-white font-black text-xs py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify OTP & Complete Registration</span>
+                  </button>
+
+                  <div className="flex justify-between items-center text-xs pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setRegOtpStep('details')}
+                      className="text-gray-500 hover:text-gray-800 dark:hover:text-white font-bold"
+                    >
+                      ← Edit Registration Details
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+                        setGeneratedRegOtp(newCode);
+                        if (onShowToast) onShowToast(`💬 New OTP Code sent: ${newCode}`, 'info');
+                      }}
+                      className="text-plum dark:text-pink-400 font-bold flex items-center gap-1 hover:underline"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Resend SMS Code</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              <div className="border-t border-gray-150 dark:border-gray-800 pt-3 text-center">
+                <p className="text-gray-500 text-xs">
+                  Already have an account?{' '}
+                  <button 
+                    onClick={() => setActiveTab('sign_in')}
+                    className="text-plum dark:text-pink-400 font-extrabold underline cursor-pointer hover:text-plum-dark"
+                  >
+                    Sign In Here
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: PROFILE DETAILS (WHEN LOGGED IN) */}
+          {customer && activeTab === 'profile' && (
             <div className="space-y-5">
               {/* Loyalty Quick Banner */}
               <div className={`bg-gradient-to-r ${currentTier.bgGradient} text-white p-4 rounded-2xl flex items-center justify-between shadow-md`}>
@@ -326,44 +870,57 @@ export default function UserProfileModal({
               </div>
 
               {/* Profile Form */}
-              <form onSubmit={handleSave} className="space-y-3">
-                <h4 className="font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider">Personal Details</h4>
+              <form onSubmit={handleSaveProfile} className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider text-xs">Account Information</h4>
+                  {customer.isVerified && (
+                    <span className="text-[10px] bg-green/10 text-green font-extrabold px-2 py-0.5 rounded-full border border-green/30 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-green" />
+                      <span>Phone Verified</span>
+                    </span>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">Full Name</label>
                   <input 
                     type="text" 
                     value={name} 
                     onChange={e => setName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:border-plum"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                    required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-gray-500 font-bold mb-1">Phone Number</label>
                     <input 
                       type="text" 
                       value={phone} 
                       onChange={e => setPhone(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:border-plum"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      required
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-500 font-bold mb-1">Email</label>
+                    <label className="block text-gray-500 font-bold mb-1">Email Address</label>
                     <input 
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:border-plum"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
                     />
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-gray-500 font-bold mb-1">County (47 Counties)</label>
                     <select
                       value={county}
                       onChange={e => setCounty(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-bold text-gray-900 dark:text-white outline-none focus:border-plum"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold outline-none focus:border-plum"
                     >
                       {KENYA_COUNTIES.map(c => (
                         <option key={c.code} value={c.name}>
@@ -373,29 +930,67 @@ export default function UserProfileModal({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-gray-500 font-bold mb-1">Default Street / Estate</label>
+                    <label className="block text-gray-500 font-bold mb-1">Estate / Street Address</label>
                     <input 
                       type="text" 
                       value={address} 
                       onChange={e => setAddress(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 outline-none focus:border-plum font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
                     />
                   </div>
                 </div>
-                <button 
-                  type="submit"
-                  className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-3 rounded-xl transition-colors cursor-pointer"
-                >
-                  Update Account Details
-                </button>
+
+                <div>
+                  <label className="block text-gray-500 font-bold mb-1">Update Password (Optional - Min 8 characters)</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                    <input 
+                      type={showNewPassword ? "text" : "password"} 
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Min 8 characters (leave blank to keep current)"
+                      className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      minLength={8}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <button 
+                    type="submit"
+                    className="flex-1 bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-2.5 rounded-xl transition-colors cursor-pointer shadow-xs active:scale-98"
+                  >
+                    Update Account Details
+                  </button>
+
+                  {onLogoutCustomer && (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        onLogoutCustomer();
+                        onClose();
+                      }}
+                      className="px-4 py-2.5 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
           )}
 
-          {/* TAB 2: LOYALTY TIER SYSTEM */}
-          {activeTab === 'loyalty' && (
+          {/* TAB: LOYALTY TIERS */}
+          {customer && activeTab === 'loyalty' && (
             <div className="space-y-5">
-              {/* Current Tier Header Card */}
               <div className={`bg-gradient-to-r ${currentTier.bgGradient} text-white p-5 rounded-3xl shadow-lg relative overflow-hidden`}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
@@ -410,7 +1005,6 @@ export default function UserProfileModal({
                   </div>
                 </div>
 
-                {/* Progress Bar towards Next Level */}
                 {nextTier ? (
                   <div className="space-y-1.5 mt-4 pt-3 border-t border-white/20">
                     <div className="flex justify-between text-[11px] font-bold text-white/90">
@@ -419,7 +1013,7 @@ export default function UserProfileModal({
                     </div>
                     <div className="w-full bg-black/30 h-2.5 rounded-full overflow-hidden p-0.5">
                       <div 
-                        className="bg-yellow h-full rounded-full transition-all duration-500" 
+                        className="bg-white h-full rounded-full transition-all duration-500" 
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
@@ -428,21 +1022,17 @@ export default function UserProfileModal({
                     </p>
                   </div>
                 ) : (
-                  <p className="text-[11px] font-bold text-yellow mt-2">
+                  <p className="text-[11px] font-bold text-white mt-2">
                     🏆 Congratulations! You have reached the highest Platinum VIP Tier status.
                   </p>
                 )}
               </div>
 
-              {/* Rank Coupons & Unlockable Perks */}
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
-                    <Award className="w-4 h-4 text-plum" />
-                    <span>Rank Coupons & VIP Benefits</span>
-                  </h4>
-                  <span className="text-[10px] text-gray-500 font-bold">Copy code to use at checkout</span>
-                </div>
+                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-plum" />
+                  <span>Kipchimatt Member Tiers & Benefits</span>
+                </h4>
 
                 <div className="space-y-3">
                   {LOYALTY_TIERS.map(tier => {
@@ -474,7 +1064,6 @@ export default function UserProfileModal({
                             </div>
                           </div>
 
-                          {/* Unlock Badge & Action */}
                           {isUnlocked ? (
                             <span className="bg-green/10 text-green font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1 border border-green/30">
                               <CheckCircle2 className="w-3 h-3 text-green" />
@@ -488,10 +1077,9 @@ export default function UserProfileModal({
                           )}
                         </div>
 
-                        {/* Perk Details */}
                         <div className="mt-2.5 pt-2.5 border-t border-gray-150 dark:border-gray-700/60 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-[11px]">
                           <p className="font-bold text-plum dark:text-pink-400 flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5 text-yellow" />
+                            <Sparkles className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
                             <span>{tier.discountDesc}</span>
                           </p>
                           <ul className="text-[10px] text-gray-500 space-y-0.5">
@@ -512,394 +1100,139 @@ export default function UserProfileModal({
           )}
 
           {/* TAB: POINTS HISTORY */}
-          {activeTab === 'points_history' && (
+          {customer && activeTab === 'points_history' && (
             <div className="space-y-4">
-              {/* Summary Header */}
-              <div className="bg-gradient-to-r from-plum via-purple-800 to-indigo-900 text-white p-4.5 rounded-2xl shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-yellow animate-pulse" />
-                    <h4 className="font-black text-sm tracking-wide">Loyalty Points Balance</h4>
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${currentTier.badgeBg}`}>
-                      {currentTier.icon} {currentTier.name}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-white/80 font-medium">
-                    Every 1 Point = KSh 1 discount redeemable optionally at checkout.
-                  </p>
+              <div className="bg-plum/10 dark:bg-pink-950/30 border border-plum/20 rounded-2xl p-4 flex justify-between items-center">
+                <div>
+                  <span className="text-[10px] font-bold text-plum dark:text-pink-300 uppercase tracking-wider">Current Points Balance</span>
+                  <h3 className="text-2xl font-black text-gray-900 dark:text-white">{points} PTS</h3>
+                  <p className="text-[10px] text-gray-500 font-medium">1 Point = KSh 1 discount at checkout</p>
                 </div>
-                <div className="bg-white/10 backdrop-blur-xs px-4 py-2 rounded-xl border border-white/20 text-center self-stretch sm:self-auto">
-                  <span className="text-[10px] uppercase text-white/70 block font-bold">Available Balance</span>
-                  <span className="text-xl font-black text-yellow">{points} PTS</span>
-                  <span className="text-[10px] font-bold text-white/90 block">(KSh {points} value)</span>
+                <div className="text-right">
+                  <span className="bg-plum text-white text-[10px] font-extrabold px-3 py-1 rounded-full">
+                    {currentTier.name}
+                  </span>
                 </div>
               </div>
 
-              {/* Points Ledger / Activity Stream */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-xs uppercase tracking-wider text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                    <History className="w-4 h-4 text-plum dark:text-pink-400" />
-                    <span>Points Transaction Ledger</span>
-                  </h4>
-                  <span className="text-[10px] text-gray-500 font-bold">1 Point per KSh 100 spent</span>
-                </div>
+              <div className="space-y-2">
+                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs">Points Activity</h4>
 
-                {activeOrders.length === 0 ? (
-                  <div className="space-y-3">
-                    {/* Welcome / Initial Account Bonus row */}
-                    <div className="p-3.5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-green/10 text-green flex items-center justify-center font-black">
-                          <Sparkles className="w-5 h-5 text-green" />
+                {previousFiveOrders.length > 0 ? (
+                  <div className="space-y-2">
+                    {previousFiveOrders.map(order => (
+                      <div 
+                        key={order.id}
+                        className="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-green/10 rounded-xl text-green">
+                            <TrendingUp className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="font-extrabold text-gray-900 dark:text-white block">Order #{order.id.slice(-6).toUpperCase()}</span>
+                            <span className="text-[10px] text-gray-500 font-medium">{order.date ? new Date(order.date).toLocaleDateString('en-GB') : 'Recent'} • Earned 1 pt / KSh 100</span>
+                          </div>
                         </div>
-                        <div>
-                          <h5 className="font-bold text-xs text-gray-900 dark:text-white">Account Membership Welcome Bonus</h5>
-                          <p className="text-[10px] text-gray-500 font-medium">Initial registration loyalty rewards credit</p>
+                        <div className="text-right">
+                          <span className="font-black text-green text-sm block">+{Math.floor(order.total / 100)} PTS</span>
+                          {order.pointsRedeemed && order.pointsRedeemed > 0 ? (
+                            <span className="text-[10px] font-bold text-red-500">-{order.pointsRedeemed} PTS redeemed</span>
+                          ) : null}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <span className="bg-green/10 text-green font-black text-xs px-2.5 py-1 rounded-lg border border-green/30 inline-block">
-                          +{points} PTS
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-center py-6 space-y-1 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                      <Clock className="w-8 h-8 text-gray-300 mx-auto" />
-                      <p className="text-xs font-bold text-gray-600 dark:text-gray-300">No order points activity yet</p>
-                      <p className="text-[11px] text-gray-400">Earn +1 point for every KSh 100 spent on upcoming supermarket orders!</p>
-                    </div>
+                    ))}
                   </div>
                 ) : (
-                  <div className="space-y-2.5">
-                    {activeOrders.map((order) => {
-                      const earned = Math.floor(order.total / 100);
-                      const redeemed = order.pointsRedeemed || 0;
-                      const formattedDate = order.date ? new Date(order.date).toLocaleDateString('en-KE', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : 'Recent Order';
-
-                      return (
-                        <div 
-                          key={order.id}
-                          className="p-3.5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs space-y-2 hover:border-plum/40 transition-all"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-xs text-gray-900 dark:text-white">
-                                Order #{order.id.slice(-6).toUpperCase()}
-                              </span>
-                              <span className="text-[10px] text-gray-500 font-medium">({order.items.length} items)</span>
-                            </div>
-                            <span className="text-[10px] text-gray-400 font-medium">{formattedDate}</span>
-                          </div>
-
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gray-100 dark:border-gray-700/60">
-                            <div className="flex items-center gap-2">
-                              {redeemed > 0 && (
-                                <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 font-extrabold text-[10px] px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800 flex items-center gap-1">
-                                  <TrendingDown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                                  <span>-{redeemed} PTS Redeemed</span>
-                                </span>
-                              )}
-
-                              <span className="bg-green/10 text-green font-extrabold text-[10px] px-2 py-0.5 rounded-lg border border-green/30 flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3 text-green" />
-                                <span>+{earned} PTS Earned</span>
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                              <span className="font-black text-xs text-gray-900 dark:text-white">
-                                {formatMoney(order.total)}
-                              </span>
-
-                              {onViewReceipt && (
-                                <button
-                                  type="button"
-                                  onClick={() => onViewReceipt(order)}
-                                  className="text-[10px] text-plum dark:text-pink-300 hover:underline font-extrabold flex items-center gap-0.5 cursor-pointer"
-                                >
-                                  <span>Receipt</span>
-                                  <ArrowRight className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* Account Creation Welcome Entry */}
-                    <div className="p-3 bg-gray-50 dark:bg-gray-850 rounded-2xl border border-gray-200 dark:border-gray-700 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-yellow" />
-                        <div>
-                          <span className="font-bold text-gray-800 dark:text-gray-200">Account Signup Loyalty Credit</span>
-                          <span className="text-[10px] text-gray-500 block font-medium">Initial signup bonus points</span>
-                        </div>
-                      </div>
-                      <span className="bg-green/10 text-green font-extrabold text-[10px] px-2 py-0.5 rounded-md border border-green/30">
-                        +{customer?.points ? Math.min(150, customer.points) : 120} PTS
-                      </span>
-                    </div>
+                  <div className="p-6 text-center text-gray-500 font-medium border border-dashed border-gray-250 dark:border-gray-700 rounded-2xl">
+                    <p>No recent orders found. Earn points automatically on every checkout!</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* TAB 3: 5 PREVIOUS RECEIPTS & ORDERS */}
-          {activeTab === 'orders' && (
+          {/* TAB: PREVIOUS RECEIPTS */}
+          {customer && activeTab === 'orders' && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-plum/5 dark:bg-gray-800 p-3.5 rounded-2xl border border-plum/20">
-                <div>
-                  <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2 text-xs sm:text-sm">
-                    <Printer className="w-4 h-4 text-plum dark:text-pink-400" />
-                    <span>Your 5 Previous Receipts</span>
-                  </h4>
-                  <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium">
-                    View, print, or download official thermal receipts for your past purchases.
-                  </p>
-                </div>
-                {previousFiveOrders.length > 0 && onViewReceipt && (
-                  <button
-                    type="button"
-                    onClick={() => onViewReceipt(previousFiveOrders[0])}
-                    className="bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-yellow" />
-                    <span>Print Latest Receipt</span>
-                  </button>
-                )}
+              <div className="flex justify-between items-center">
+                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
+                  <Printer className="w-4 h-4 text-plum" />
+                  <span>Your Previous Receipts ({previousFiveOrders.length})</span>
+                </h4>
               </div>
 
-              {previousFiveOrders.length === 0 ? (
-                <div className="text-center py-8 space-y-2 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">
-                  <ShoppingCart className="w-10 h-10 text-gray-300 mx-auto" />
-                  <p className="text-gray-500 font-medium text-xs">No recent order history found yet.</p>
-                  <p className="text-[11px] text-gray-400">Place an order at checkout to automatically generate your printable e-receipts!</p>
-                </div>
-              ) : (
+              {previousFiveOrders.length > 0 ? (
                 <div className="space-y-3">
-                  {previousFiveOrders.map((order, idx) => (
+                  {previousFiveOrders.map(order => (
                     <div 
-                      key={order.id} 
-                      className="p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:border-plum/40 transition-all"
+                      key={order.id}
+                      className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3 hover:border-plum transition-all"
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="bg-plum/10 text-plum dark:text-pink-300 font-black text-[10px] px-2 py-0.5 rounded-md">
-                            Receipt #{idx + 1}
-                          </span>
-                          <p className="font-extrabold text-gray-900 dark:text-white text-xs">
-                            Order #{order.id.slice(-6).toUpperCase()}
-                          </p>
-                          <span className="text-[10px] font-bold text-green uppercase bg-green/10 px-2 py-0.5 rounded-md">
-                            {order.status}
+                      <div className="flex justify-between items-start border-b border-gray-150 dark:border-gray-700 pb-2.5">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-sm text-gray-900 dark:text-white">Order #{order.id.slice(-6).toUpperCase()}</span>
+                            <span className="bg-green/10 text-green font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green/30">
+                              {order.status}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-gray-500 font-medium flex items-center gap-1 mt-0.5">
+                            <Clock className="w-3 h-3" />
+                            {order.date ? new Date(order.date).toLocaleString('en-GB') : 'Recent Order'}
                           </span>
                         </div>
-                        <p className="text-[10px] text-gray-500 font-medium">
-                          {new Date(order.date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} • {order.items.length} item(s)
-                        </p>
-                        <p className="text-[11px] text-gray-600 dark:text-gray-300 line-clamp-1 font-medium">
-                          {order.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
-                        </p>
+                        <div className="text-right">
+                          <span className="font-black text-plum dark:text-pink-400 text-sm">{formatMoney(order.total)}</span>
+                          <span className="text-[10px] text-gray-500 block font-bold">{order.items.reduce((s, i) => s + i.qty, 0)} Items</span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-150 dark:border-gray-700">
-                        <span className="font-black text-plum dark:text-pink-400 text-sm mr-1">{formatMoney(order.total)}</span>
-                        
+                      {/* Items Summary */}
+                      <div className="text-[11px] text-gray-600 dark:text-gray-300 space-y-1">
+                        {order.items.slice(0, 3).map((item, idx) => (
+                          <div key={idx} className="flex justify-between font-medium">
+                            <span className="truncate max-w-[200px] sm:max-w-[300px]">{item.qty}x {item.name}</span>
+                            <span className="font-bold">{formatMoney(item.price * item.qty)}</span>
+                          </div>
+                        ))}
+                        {order.items.length > 3 && (
+                          <p className="text-[10px] text-gray-400 italic">+ {order.items.length - 3} more item(s)</p>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-1">
                         {onViewReceipt && (
                           <button
-                            type="button"
                             onClick={() => onViewReceipt(order)}
-                            className="bg-plum/10 hover:bg-plum hover:text-white text-plum dark:text-pink-300 font-extrabold text-[11px] px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                            title="Print e-receipt for this order"
+                            className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-extrabold text-xs py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                           >
-                            <Printer className="w-3.5 h-3.5" />
-                            <span>Print Receipt</span>
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>View / Print Receipt</span>
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => onReorderCart && onReorderCart(order.items)}
-                          className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-extrabold text-[11px] px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-                          title="Populate cart with these items"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          <span>Reorder</span>
-                        </button>
+                        {onReorderCart && (
+                          <button
+                            onClick={() => onReorderCart(order.items)}
+                            className="flex-1 bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-white" />
+                            <span>Reorder Items</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500 font-medium border border-dashed border-gray-250 dark:border-gray-700 rounded-2xl space-y-2">
+                  <Printer className="w-8 h-8 mx-auto text-gray-300" />
+                  <p className="font-bold text-gray-700 dark:text-gray-300">No previous order receipts yet.</p>
+                  <p className="text-[11px]">When you place orders on Kipchimatt Supermarket, your receipts will be safely archived here for instant reordering and printing!</p>
+                </div>
               )}
-            </div>
-          )}
-
-          {/* TAB 4: CREATE AN ACCOUNT */}
-          {activeTab === 'create_account' && (
-            <div className="space-y-4">
-              <div className="bg-gradient-to-r from-plum/10 via-purple-500/10 to-pink-500/10 dark:from-plum/20 dark:to-purple-900/30 p-4 rounded-2xl border border-plum/20">
-                <div className="flex items-center gap-2 text-plum dark:text-pink-300 font-extrabold text-sm mb-1">
-                  <UserPlus className="w-4 h-4 text-green" />
-                  <span>Create Your Kipchimatt Account</span>
-                </div>
-                <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium">
-                  Register for a free shopper account to save your delivery addresses, earn <strong>150 Loyalty Welcome Points</strong>, and instantly track & print your purchase receipts.
-                </p>
-              </div>
-
-              <form onSubmit={handleCreateAccountSubmit} className="space-y-3.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                    Full Name *
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                    <input
-                      type="text"
-                      required
-                      value={regName}
-                      onChange={(e) => setRegName(e.target.value)}
-                      placeholder="e.g. Jane Wanjiru"
-                      className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Phone Number (M-PESA) *
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                      <input
-                        type="tel"
-                        required
-                        value={regPhone}
-                        onChange={(e) => setRegPhone(e.target.value)}
-                        placeholder="e.g. 0712345678"
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                      <input
-                        type="email"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="e.g. jane@example.com"
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Delivery County *
-                    </label>
-                    <div className="relative">
-                      <MapPin className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                      <select
-                        value={regCounty}
-                        onChange={(e) => setRegCounty(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                      >
-                        {KENYA_COUNTIES.map(c => (
-                          <option key={c.code} value={c.name}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Street / Estate Address
-                    </label>
-                    <input
-                      type="text"
-                      value={regAddress}
-                      onChange={(e) => setRegAddress(e.target.value)}
-                      placeholder="e.g. Westlands, Commercial St"
-                      className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Password (Optional)
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                      <input
-                        type="password"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
-                      Confirm Password
-                    </label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                      <input
-                        type="password"
-                        value={regConfirmPassword}
-                        onChange={(e) => setRegConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-plum outline-none text-gray-900 dark:text-white"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50 flex items-start gap-2.5">
-                  <input
-                    type="checkbox"
-                    id="optInLoyalty"
-                    checked={optInLoyalty}
-                    onChange={(e) => setOptInLoyalty(e.target.checked)}
-                    className="mt-0.5 rounded text-plum focus:ring-plum accent-plum cursor-pointer"
-                  />
-                  <label htmlFor="optInLoyalty" className="text-[11px] text-amber-900 dark:text-amber-200 cursor-pointer font-medium">
-                    <strong>Claim 150 Welcome Loyalty Points</strong> — Unlock Bronze Tier perks immediately and earn points on every future order!
-                  </label>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs py-3 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                  >
-                    <UserPlus className="w-4 h-4 text-yellow" />
-                    <span>Create My Account Now</span>
-                  </button>
-                </div>
-              </form>
             </div>
           )}
 
@@ -908,4 +1241,3 @@ export default function UserProfileModal({
     </div>
   );
 }
-

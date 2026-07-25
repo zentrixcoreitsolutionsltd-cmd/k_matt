@@ -275,7 +275,7 @@ export default function ReceiptModal({
               <div className="sm:text-center">
                 <span className="text-gray-500 dark:text-gray-400 font-medium block text-[10px] uppercase">Loyalty Reward</span>
                 <span className="font-black text-plum dark:text-pink-400 text-xs flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-yellow" />
+                  <Sparkles className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
                   <span>{order.pointsRedeemed} PTS Redeemed (-{formatMoney(order.discountAmount || 0)})</span>
                 </span>
               </div>
