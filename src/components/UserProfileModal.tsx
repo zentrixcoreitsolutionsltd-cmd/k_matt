@@ -4,11 +4,12 @@ import {
   Crown, Lock, CheckCircle2, Copy, Check, Sparkles, ChevronRight, Zap,
   Printer, FileText, UserPlus, KeyRound, LogOut, Download, AlertCircle,
   History, TrendingUp, TrendingDown, Clock, Calendar, ArrowRight,
-  ShieldCheck, Eye, EyeOff, MessageSquareCode, LogIn, RefreshCw
+  ShieldCheck, Eye, EyeOff, MessageSquareCode, LogIn, RefreshCw, Building2
 } from 'lucide-react';
 import { Customer, Order, CartItem } from '../types';
 import { formatMoney } from '../data/catalog';
 import { KENYA_COUNTIES } from '../data/counties';
+import { BRANCHES, getNearestBranchForCustomer, getDistanceToBranchKm } from '../data/branches';
 
 interface LoyaltyTier {
   id: 'bronze' | 'silver' | 'gold' | 'platinum';
@@ -86,6 +87,8 @@ interface UserProfileModalProps {
   onReorderCart?: (items: CartItem[]) => void;
   onViewReceipt?: (order: Order) => void;
   onShowToast?: (msg: string, type: 'success' | 'error' | 'info') => void;
+  selectedBranchId?: string;
+  onSelectBranch?: (branchId: string) => void;
 }
 
 export default function UserProfileModal({
@@ -99,7 +102,9 @@ export default function UserProfileModal({
   onLogoutCustomer,
   onReorderCart,
   onViewReceipt,
-  onShowToast
+  onShowToast,
+  selectedBranchId = 'kericho',
+  onSelectBranch
 }: UserProfileModalProps) {
   const activeOrders = orders || userOrders || [];
   const previousFiveOrders = activeOrders.slice(0, 5);
@@ -939,6 +944,74 @@ export default function UserProfileModal({
                     />
                   </div>
                 </div>
+
+                {/* Nearest K-Matt Supermarket Branch & Distance Calculation Card */}
+                {(() => {
+                  const activeLoc = `${address} ${county}`;
+                  const nearestRes = getNearestBranchForCustomer(activeLoc);
+                  const matchedB = nearestRes.branch;
+                  const matchedKm = nearestRes.distanceKm;
+
+                  return (
+                    <div className="bg-gradient-to-r from-plum/10 via-pink-500/10 to-amber-500/10 border-2 border-plum/30 rounded-2xl p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 bg-plum text-white rounded-xl shadow-xs">
+                            <Building2 className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-black uppercase text-plum dark:text-pink-400 tracking-wider">
+                              Matched Nearest K-Matt Supermarket
+                            </span>
+                            <h4 className="font-black text-gray-900 dark:text-white text-sm">
+                              {matchedB.name}
+                            </h4>
+                          </div>
+                        </div>
+                        <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-extrabold text-xs px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-xs">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>~{matchedKm} km away</span>
+                        </span>
+                      </div>
+
+                      <p className="text-gray-600 dark:text-gray-300 text-xs font-medium">
+                        Storefront stock and products automatically update based on your address (<strong>{county}</strong>). Nearest branch: <strong>{matchedB.town} ({matchedB.address})</strong>.
+                      </p>
+
+                      {/* Distance to all K-Matt branches breakdown */}
+                      <div className="pt-1">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase block mb-1.5">
+                          Distance to all K-Matt Supermarkets from your address:
+                        </span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px]">
+                          {BRANCHES.map(b => {
+                            const dist = getDistanceToBranchKm(activeLoc, b.id);
+                            const isSelected = b.id === selectedBranchId;
+                            return (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => {
+                                  if (onSelectBranch) onSelectBranch(b.id);
+                                }}
+                                className={`p-2 rounded-xl border text-left cursor-pointer transition-all ${
+                                  isSelected 
+                                    ? 'bg-plum text-white border-plum font-extrabold shadow-sm'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-plum/50'
+                                }`}
+                              >
+                                <div className="font-bold truncate">{b.town}</div>
+                                <div className={`text-[10px] ${isSelected ? 'text-pink-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                  ~{dist} km {isSelected ? '✓ Active' : ''}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div>
                   <label className="block text-gray-500 font-bold mb-1">Update Password (Optional - Min 8 characters)</label>

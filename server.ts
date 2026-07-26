@@ -5,7 +5,8 @@ import { createServer as createViteServer } from "vite";
 
 // Seed default datasets from source code
 import { defaultProducts, defaultSettings } from "./src/data/catalog";
-import { Product, Order, StoreSettings } from "./src/types";
+import { BRANCHES } from "./src/data/branches";
+import { Product, Order, StoreSettings, Branch } from "./src/types";
 
 async function startServer() {
   const app = express();
@@ -74,6 +75,132 @@ async function startServer() {
 
   // --- API ROUTE ENDPOINTS ---
 
+  // GET ALL BRANCHES WITH INVENTORY METRICS
+  app.get("/api/branches", (req, res) => {
+    try {
+      const branchData = BRANCHES.map(b => {
+        let availableSKUs = 0;
+        let totalStockUnits = 0;
+        products.forEach(p => {
+          const bStock = (p.branchStock && typeof p.branchStock[b.id] === 'number')
+            ? p.branchStock[b.id]
+            : p.stock;
+          if (bStock > 0) {
+            availableSKUs += 1;
+            totalStockUnits += bStock;
+          }
+        });
+        return {
+          ...b,
+          totalSKUs: products.length,
+          availableSKUs,
+          totalUnits: totalStockUnits
+        };
+      });
+      res.json(branchData);
+    } catch (e) {
+      console.error("Failed to fetch branches:", e);
+      res.status(500).json({ error: "Failed to fetch branches" });
+    }
+  });
+
+  // SYNC BRANCH-SPECIFIC PRODUCT INVENTORY
+  app.post("/api/branches", (req, res) => {
+    try {
+      const { branchId, productId, stock, inventory, products: updatedProducts, syncMap } = req.body;
+
+      if (Array.isArray(updatedProducts)) {
+        products = updatedProducts;
+        writeData(PRODUCTS_FILE, products);
+        return res.json({ success: true, message: "Products and branch inventory synced successfully", count: products.length, products });
+      }
+
+      if (syncMap && typeof syncMap === 'object') {
+        Object.keys(syncMap).forEach(bId => {
+          const pMap = syncMap[bId];
+          Object.keys(pMap).forEach(pId => {
+            const numId = Number(pId);
+            const pIdx = products.findIndex(p => p.id === numId);
+            if (pIdx !== -1) {
+              if (!products[pIdx].branchStock) products[pIdx].branchStock = {};
+              products[pIdx].branchStock![bId] = Number(pMap[pId]);
+            }
+          });
+        });
+        writeData(PRODUCTS_FILE, products);
+        return res.json({ success: true, message: "Multi-branch inventory map synced", products });
+      }
+
+      if (branchId && inventory && typeof inventory === 'object') {
+        Object.keys(inventory).forEach(pId => {
+          const numId = Number(pId);
+          const pIdx = products.findIndex(p => p.id === numId);
+          if (pIdx !== -1) {
+            if (!products[pIdx].branchStock) products[pIdx].branchStock = {};
+            products[pIdx].branchStock![branchId] = Number(inventory[pId]);
+          }
+        });
+        writeData(PRODUCTS_FILE, products);
+        return res.json({ success: true, branchId, updatedItems: Object.keys(inventory).length, products });
+      }
+
+      if (branchId && productId !== undefined && stock !== undefined) {
+        const pIdx = products.findIndex(p => p.id === Number(productId));
+        if (pIdx !== -1) {
+          if (!products[pIdx].branchStock) products[pIdx].branchStock = {};
+          products[pIdx].branchStock![branchId] = Number(stock);
+          products[pIdx].branchId = branchId;
+          writeData(PRODUCTS_FILE, products);
+          return res.json({ success: true, product: products[pIdx] });
+        }
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      res.status(400).json({ error: "Invalid sync payload format" });
+    } catch (e) {
+      console.error("Failed to sync branch inventory:", e);
+      res.status(500).json({ error: "Failed to sync branch inventory" });
+    }
+  });
+
+  // PUT UPDATE BRANCH INVENTORY
+  app.put("/api/branches/:branchId/inventory", (req, res) => {
+    try {
+      const { branchId } = req.params;
+      const { productId, stock, inventory } = req.body;
+
+      if (inventory && typeof inventory === 'object') {
+        Object.keys(inventory).forEach(pId => {
+          const numId = Number(pId);
+          const pIdx = products.findIndex(p => p.id === numId);
+          if (pIdx !== -1) {
+            if (!products[pIdx].branchStock) products[pIdx].branchStock = {};
+            products[pIdx].branchStock![branchId] = Number(inventory[pId]);
+          }
+        });
+        writeData(PRODUCTS_FILE, products);
+        return res.json({ success: true, branchId, updatedCount: Object.keys(inventory).length, products });
+      }
+
+      if (productId !== undefined && stock !== undefined) {
+        const pIdx = products.findIndex(p => p.id === Number(productId));
+        if (pIdx !== -1) {
+          if (!products[pIdx].branchStock) products[pIdx].branchStock = {};
+          products[pIdx].branchStock![branchId] = Number(stock);
+          products[pIdx].branchId = branchId;
+          writeData(PRODUCTS_FILE, products);
+          return res.json({ success: true, product: products[pIdx] });
+        }
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      res.status(400).json({ error: "Invalid payload" });
+    } catch (e) {
+      console.error("Failed to update branch inventory:", e);
+      res.status(500).json({ error: "Failed to update branch inventory" });
+    }
+  });
+
   // GET ALL PRODUCTS
   app.get("/api/products", (req, res) => {
     res.json(products);
@@ -120,6 +247,8 @@ async function startServer() {
         price: Number(payload.price) || 0,
         originalPrice: Number(payload.originalPrice) || 0,
         stock: Number(payload.stock) || 0,
+        branchId: payload.branchId || "kericho",
+        branchStock: payload.branchStock || {},
         image: payload.image || "",
         description: payload.description || "",
         specifications: payload.specifications || {},

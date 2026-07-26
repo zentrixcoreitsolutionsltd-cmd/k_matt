@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { 
   X, Heart, ShoppingCart, Share2, Star, Check, Plus, Minus, 
-  Truck, ShieldCheck, ArrowRight, MessageSquare, Tag, AlertCircle, Sparkles
+  Truck, ShieldCheck, ArrowRight, MessageSquare, Tag, AlertCircle, Sparkles, Building2, MapPin
 } from 'lucide-react';
 import { Product, StoreSettings, Customer, Order } from '../types';
 import { formatMoney, calcDiscount } from '../data/catalog';
+import { BRANCHES, getProductStockForBranch } from '../data/branches';
 
 interface ProductDetailModalProps {
   product: Product;
@@ -20,6 +21,8 @@ interface ProductDetailModalProps {
   onAddReview: (productId: number, review: { userName: string; rating: number; comment: string }) => void;
   customer?: Customer | null;
   orders?: Order[];
+  selectedBranchId?: string;
+  onOpenBranchModal?: () => void;
 }
 
 export default function ProductDetailModal({
@@ -34,7 +37,9 @@ export default function ProductDetailModal({
   deliveryLocation,
   onNavigateToProduct,
   onAddReview,
-  customer
+  customer,
+  selectedBranchId = 'kericho',
+  onOpenBranchModal
 }: ProductDetailModalProps) {
   if (!isOpen || !product) return null;
 
@@ -105,7 +110,7 @@ export default function ProductDetailModal({
         <div className="p-4 border-b border-gray-150 dark:border-gray-800 flex items-center justify-between bg-plum text-white">
           <div className="flex items-center gap-2">
             <span className="bg-white/20 text-white text-xs px-2.5 py-1 rounded-md font-extrabold uppercase">
-              {product.brand || 'Kipchimatt'}
+              {product.brand || 'K-Matt'}
             </span>
             <span className="text-xs text-white/80 font-bold uppercase tracking-wider">
               {product.category}
@@ -177,11 +182,11 @@ export default function ProductDetailModal({
                   <span className="text-gray-300">•</span>
                   {isOutOfStock ? (
                     <span className="font-bold text-red bg-red/10 px-2 py-0.5 rounded-md">Out of Stock</span>
-                  ) : (
-                    <span className="font-bold text-green bg-green/10 px-2 py-0.5 rounded-md">
-                      In Stock ({product.stock} units)
+                  ) : qty >= product.stock ? (
+                    <span className="font-extrabold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-md text-xs border border-amber-300">
+                      Max available stock reached ({product.stock} units)
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
@@ -200,6 +205,67 @@ export default function ProductDetailModal({
                     Save {formatMoney(product.originalPrice - product.price)}
                   </span>
                 )}
+              </div>
+
+              {/* Regional K-Matt Branch Stock Breakdown Card */}
+              <div className="bg-white dark:bg-gray-800/80 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-plum dark:text-pink-400" />
+                    <h4 className="text-xs font-extrabold text-gray-900 dark:text-white uppercase tracking-wider">
+                      Branch Inventory Availability
+                    </h4>
+                  </div>
+                  {onOpenBranchModal && (
+                    <button
+                      onClick={onOpenBranchModal}
+                      className="text-[11px] font-black text-plum dark:text-pink-400 hover:underline flex items-center gap-1"
+                    >
+                      <span>Switch Branch</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {BRANCHES.map((b) => {
+                    const bStock = getProductStockForBranch(product, b.id);
+                    const isCurrent = b.id === (selectedBranchId || 'kericho');
+
+                    return (
+                      <div
+                        key={b.id}
+                        className={`p-2.5 rounded-xl border text-xs transition-all ${
+                          isCurrent
+                            ? 'bg-plum-fade/80 dark:bg-gray-700 border-plum dark:border-pink-500 font-extrabold'
+                            : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-700/80'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-[11px] font-bold text-gray-800 dark:text-gray-200 truncate">
+                            {b.town}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[9px] bg-plum text-white font-black px-1.5 py-0.2 rounded shrink-0">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px]">
+                          {bStock > 0 ? (
+                            <span className="text-emerald-700 dark:text-emerald-400 font-black">
+                              {bStock} in stock
+                            </span>
+                          ) : (
+                            <span className="text-red-500 dark:text-red-400 font-bold">
+                              Out of stock
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Quantity & Add to Cart Controls */}
@@ -295,7 +361,7 @@ export default function ProductDetailModal({
             {activeTab === 'overview' && (
               <div className="text-xs text-gray-700 dark:text-gray-300 space-y-2 leading-relaxed">
                 <p>
-                  {product.description || `Fresh, authentic ${product.name} sourced directly for Kipchimatt shoppers. Quality guaranteed with 100% genuine Kenyan supply standard.`}
+                  {product.description || `Fresh, authentic ${product.name} sourced directly for K-Matt shoppers. Quality guaranteed with 100% genuine Kenyan supply standard.`}
                 </p>
                 <p className="text-gray-500">
                   Store at recommended temperature. Packaged under safe hygiene guidelines for home consumption.

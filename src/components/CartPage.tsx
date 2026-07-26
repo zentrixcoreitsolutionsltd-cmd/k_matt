@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, ArrowLeft, 
   CreditCard, Phone, MapPin, User, Mail, ShieldCheck, CheckCircle2, 
@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { CartItem, StoreSettings, Order, Customer } from '../types';
 import { formatMoney } from '../data/catalog';
 import { KENYA_COUNTIES } from '../data/counties';
+import { BRANCHES, getNearestBranchForCustomer, getDistanceToBranchKm } from '../data/branches';
 import ReceiptModal from './ReceiptModal';
 import { generatePdfReceipt } from '../utils/generatePdfReceipt';
 
@@ -38,6 +39,8 @@ interface CartPageProps {
   orders?: Order[];
   currentCustomer?: Customer | null;
   onOpenAuthModal?: () => void;
+  selectedBranchId?: string;
+  onSaveCustomer?: (cust: Customer) => void;
 }
 
 const PICKUP_BRANCHES = [
@@ -62,7 +65,9 @@ export default function CartPage({
   onBackToShop,
   orders,
   currentCustomer,
-  onOpenAuthModal
+  onOpenAuthModal,
+  selectedBranchId = 'kericho',
+  onSaveCustomer
 }: CartPageProps) {
   // Steps: 'basket' | 'shipping' | 'payment' | 'confirmation'
   const [step, setStep] = useState<'basket' | 'shipping' | 'payment' | 'confirmation'>('basket');
@@ -103,7 +108,41 @@ export default function CartPage({
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
-  // Calculations
+  // Helper to sync edited customer profile back to persistent storage
+  const syncCustomerProfile = (updates: Partial<Customer>) => {
+    if (currentCustomer && onSaveCustomer) {
+      const updatedCust: Customer = {
+        ...currentCustomer,
+        ...updates,
+        name: updates.name !== undefined ? updates.name : (name || currentCustomer.name),
+        phone: updates.phone !== undefined ? updates.phone : (phone || currentCustomer.phone),
+        email: updates.email !== undefined ? updates.email : (email || currentCustomer.email),
+        address: updates.address !== undefined ? updates.address : (address || currentCustomer.address),
+        county: updates.county !== undefined ? updates.county : (deliveryLocation || currentCustomer.county),
+        city: updates.county !== undefined ? updates.county : (deliveryLocation || currentCustomer.city),
+      };
+      onSaveCustomer(updatedCust);
+    }
+  };
+
+  // Auto-fill customer form details from current logged-in customer profile
+  useEffect(() => {
+    if (currentCustomer) {
+      if (currentCustomer.name && currentCustomer.name !== name) setName(currentCustomer.name);
+      if (currentCustomer.phone && currentCustomer.phone !== phone) {
+        setPhone(currentCustomer.phone);
+        setStkPhone(currentCustomer.phone);
+      }
+      if (currentCustomer.email && currentCustomer.email !== email) setEmail(currentCustomer.email);
+      if (currentCustomer.address && currentCustomer.address !== address) setAddress(currentCustomer.address);
+      if (currentCustomer.county || currentCustomer.city) {
+        const cty = currentCustomer.county || currentCustomer.city;
+        if (cty && cty !== deliveryLocation && onDeliveryLocationChange) {
+          onDeliveryLocationChange(cty);
+        }
+      }
+    }
+  }, [currentCustomer?.phone, currentCustomer?.name, currentCustomer?.address, currentCustomer?.county]);
   const rawSubtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
   const maxRedeemablePoints = Math.min(availablePoints, rawSubtotal);
   const actualPointsToRedeem = Math.min(pointsToRedeem, maxRedeemablePoints);
@@ -169,6 +208,10 @@ export default function CartPage({
 
   // Order Execution Helper
   const executeOrderPlacement = (finalPaymentMethod: string, customTxnRef?: string) => {
+    if (!currentCustomer) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
     if (!onPlaceOrder) return;
 
     const customerData: Customer = {
@@ -313,7 +356,7 @@ export default function CartPage({
             </div>
             <h2 className="text-2xl font-black text-gray-900 dark:text-white">Order Confirmed & Paid!</h2>
             <p className="text-xs text-gray-600 dark:text-gray-300">
-              Thank you for shopping at Kipchimatt. Receipt <strong className="text-plum dark:text-pink-400 font-extrabold">{completedOrder.receiptNo}</strong> is issued and saved.
+              Thank you for shopping at K-Matt. Receipt <strong className="text-plum dark:text-pink-400 font-extrabold">{completedOrder.receiptNo}</strong> is issued and saved.
             </p>
           </div>
 
@@ -503,7 +546,11 @@ export default function CartPage({
                       <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Target County (47 Counties in Kenya):</label>
                       <select 
                         value={deliveryLocation}
-                        onChange={e => onDeliveryLocationChange && onDeliveryLocationChange(e.target.value)}
+                        onChange={e => {
+                          const newCty = e.target.value;
+                          if (onDeliveryLocationChange) onDeliveryLocationChange(newCty);
+                          syncCustomerProfile({ county: newCty, city: newCty });
+                        }}
                         className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-plum"
                       >
                         {KENYA_COUNTIES.map(c => (
@@ -514,23 +561,53 @@ export default function CartPage({
                   )}
                 </div>
 
-                <button 
-                  onClick={() => setStep('shipping')}
-                  className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs uppercase tracking-wider py-4 rounded-2xl shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <span>Proceed to Delivery Info</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                {!currentCustomer ? (
+                  <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-800 rounded-2xl p-4 text-xs space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 font-extrabold text-amber-900 dark:text-amber-200 text-sm">
+                      <UserPlus className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>Member Account Required to Place an Order</span>
+                    </div>
+                    <p className="text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                      Please create an account or sign in with your address first. Your profile address automatically pairs you with your nearest K-Matt Supermarket branch (e.g. Kericho, Nakuru, Eldoret) and calculates accurate delivery distance.
+                    </p>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (onOpenAuthModal) onOpenAuthModal();
+                      }}
+                      className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+                    >
+                      <UserPlus className="w-4 h-4 text-white" />
+                      <span>Create Account / Sign In to Continue Checkout</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setStep('shipping')}
+                    className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs uppercase tracking-wider py-4 rounded-2xl shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>Proceed to Delivery Info</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )}
 
             {/* STEP 2: SHIPPING / CONTACT FORM */}
             {step === 'shipping' && (
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
-                <h2 className="font-black text-base text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-150 dark:border-gray-800 pb-3">
-                  <User className="w-5 h-5 text-plum" />
-                  <span>2. Customer Contact & Delivery Address</span>
-                </h2>
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-150 dark:border-gray-800 pb-3">
+                  <h2 className="font-black text-base text-gray-900 dark:text-white flex items-center gap-2">
+                    <User className="w-5 h-5 text-plum" />
+                    <span>2. Customer Contact & Delivery Address</span>
+                  </h2>
+                  {currentCustomer && (
+                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      <span>Auto-synced with Member Account</span>
+                    </span>
+                  )}
+                </div>
 
                 <div className="space-y-3 text-xs">
                   <div>
@@ -542,7 +619,12 @@ export default function CartPage({
                         required 
                         placeholder="e.g., Jane Wambui" 
                         value={name} 
-                        onChange={e => setName(e.target.value)}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setName(val);
+                          syncCustomerProfile({ name: val });
+                        }}
+                        onBlur={() => syncCustomerProfile({ name })}
                         className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
                       />
                     </div>
@@ -559,9 +641,12 @@ export default function CartPage({
                           placeholder="0712345678" 
                           value={phone} 
                           onChange={e => {
-                            setPhone(e.target.value);
-                            setStkPhone(e.target.value);
+                            const val = e.target.value;
+                            setPhone(val);
+                            setStkPhone(val);
+                            syncCustomerProfile({ phone: val });
                           }}
+                          onBlur={() => syncCustomerProfile({ phone })}
                           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
                         />
                       </div>
@@ -575,7 +660,12 @@ export default function CartPage({
                           type="email" 
                           placeholder="jane@example.com" 
                           value={email} 
-                          onChange={e => setEmail(e.target.value)}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setEmail(val);
+                            syncCustomerProfile({ email: val });
+                          }}
+                          onBlur={() => syncCustomerProfile({ email })}
                           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
                         />
                       </div>
@@ -583,19 +673,52 @@ export default function CartPage({
                   </div>
 
                   {deliveryType === 'express' ? (
-                    <div>
-                      <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Doorstep Address / House No / Landmark *</label>
-                      <div className="relative">
-                        <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                        <input 
-                          type="text" 
-                          required 
-                          placeholder="Apt 4B, Westlands Heights, Parklands Rd" 
-                          value={address} 
-                          onChange={e => setAddress(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
-                        />
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Doorstep Address / House No / Landmark *</label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+                          <input 
+                            type="text" 
+                            required 
+                            placeholder="Apt 4B, Temple Rd / Westlands, Parklands Rd" 
+                            value={address} 
+                            onChange={e => {
+                              const val = e.target.value;
+                              setAddress(val);
+                              syncCustomerProfile({ address: val });
+                            }}
+                            onBlur={() => syncCustomerProfile({ address })}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
+                          />
+                        </div>
                       </div>
+
+                      {/* Nearest Fulfillment Supermarket Branch Box */}
+                      {(() => {
+                        const activeLoc = `${address} ${deliveryLocation}`;
+                        const nearestRes = getNearestBranchForCustomer(activeLoc);
+                        const nearestB = nearestRes.branch;
+                        const nearestKm = nearestRes.distanceKm;
+
+                        return (
+                          <div className="bg-plum/5 dark:bg-plum/20 border border-plum/30 rounded-xl p-3 space-y-1.5 text-xs">
+                            <div className="flex flex-wrap items-center justify-between gap-1">
+                              <div className="flex items-center gap-1.5 font-black text-plum dark:text-pink-300">
+                                <Building2 className="w-4 h-4" />
+                                <span>Nearest Supermarket: {nearestB.name}</span>
+                              </div>
+                              <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md font-extrabold text-[10px] flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-emerald-600" />
+                                ~{nearestKm} km from address
+                              </span>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-300 text-[11px]">
+                              Express rider dispatch assigned from <strong>{nearestB.town} ({nearestB.address})</strong>.
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="bg-green-50 dark:bg-green-950/40 p-3 rounded-xl border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-xs font-semibold flex items-center gap-2">
@@ -1073,7 +1196,7 @@ export default function CartPage({
               {/* Loyalty points notification */}
               <div className="bg-plum-fade dark:bg-gray-800 p-3 rounded-2xl text-[11px] font-bold text-plum dark:text-pink-300 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-plum dark:text-pink-400" />
-                <span>Earn +{Math.floor(grandTotal / 100)} Kipchimatt Loyalty Points on this order!</span>
+                <span>Earn +{Math.floor(grandTotal / 100)} K-Matt Loyalty Points on this order!</span>
               </div>
 
               <div className="text-[10px] text-gray-400 text-center font-semibold pt-1 flex items-center justify-center gap-1">

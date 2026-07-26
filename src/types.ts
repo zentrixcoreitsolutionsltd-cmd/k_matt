@@ -6,6 +6,18 @@ export interface Review {
   date: string;
 }
 
+export interface Branch {
+  id: string;
+  name: string;
+  town: string;
+  county: string;
+  address: string;
+  phone: string;
+  isMain?: boolean;
+  lat?: number;
+  lng?: number;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -14,6 +26,8 @@ export interface Product {
   price: number;
   originalPrice: number;
   stock: number;
+  branchId?: string; // Primary branch assignment if applicable
+  branchStock?: Record<string, number>; // Maps branchId -> stock count
   image: string;
   description?: string;
   specifications?: Record<string, string>;
@@ -60,6 +74,8 @@ export interface Order {
   couponCode?: string;
   deliveryType?: 'express' | 'pickup';
   pickupBranch?: string;
+  branchId?: string;
+  branchName?: string;
   vatAmount?: number;
 }
 

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, CheckCircle, ShieldCheck, CreditCard, Phone, MapPin, User, Mail, 
-  Smartphone, Lock, Building2, Printer, RefreshCw, Download 
+  Smartphone, Lock, Building2, Printer, RefreshCw, Download, UserPlus 
 } from 'lucide-react';
 import { CartItem, StoreSettings, Customer, Order } from '../types';
 import { formatMoney } from '../data/catalog';
@@ -15,6 +15,9 @@ interface CheckoutModalProps {
   cart: CartItem[];
   settings: StoreSettings;
   deliveryLocation: string;
+  currentCustomer?: Customer | null;
+  onOpenAuthModal?: () => void;
+  onSaveCustomer?: (cust: Customer) => void;
   onPlaceOrder: (
     customerData: Customer, 
     paymentMethod: string, 
@@ -36,6 +39,9 @@ export default function CheckoutModal({
   cart,
   settings,
   deliveryLocation,
+  currentCustomer,
+  onOpenAuthModal,
+  onSaveCustomer,
   onPlaceOrder
 }: CheckoutModalProps) {
   const [name, setName] = useState('');
@@ -43,6 +49,34 @@ export default function CheckoutModal({
   const [email, setEmail] = useState('');
   const [address, setAddress] = useState('');
   const [selectedCounty, setSelectedCounty] = useState(deliveryLocation || 'Nairobi');
+
+  const syncCustomerProfile = (updates: Partial<Customer>) => {
+    if (currentCustomer && onSaveCustomer) {
+      const updatedCust: Customer = {
+        ...currentCustomer,
+        ...updates,
+        name: updates.name !== undefined ? updates.name : (name || currentCustomer.name),
+        phone: updates.phone !== undefined ? updates.phone : (phone || currentCustomer.phone),
+        email: updates.email !== undefined ? updates.email : (email || currentCustomer.email),
+        address: updates.address !== undefined ? updates.address : (address || currentCustomer.address),
+        county: updates.county !== undefined ? updates.county : (selectedCounty || currentCustomer.county),
+        city: updates.county !== undefined ? updates.county : (selectedCounty || currentCustomer.city),
+      };
+      onSaveCustomer(updatedCust);
+    }
+  };
+
+  useEffect(() => {
+    if (currentCustomer) {
+      if (currentCustomer.name) setName(currentCustomer.name);
+      if (currentCustomer.phone) setPhone(currentCustomer.phone);
+      if (currentCustomer.email) setEmail(currentCustomer.email);
+      if (currentCustomer.address) setAddress(currentCustomer.address);
+      if (currentCustomer.county || currentCustomer.city) {
+        setSelectedCounty(currentCustomer.county || currentCustomer.city || 'Nairobi');
+      }
+    }
+  }, [currentCustomer]);
   const [paymentMethod, setPaymentMethod] = useState<'M-PESA' | 'Card' | 'Cash on Delivery'>('M-PESA');
   const [notes, setNotes] = useState('');
 
@@ -165,7 +199,32 @@ export default function CheckoutModal({
           </button>
         </div>
 
-        {placedOrder ? (
+        {!currentCustomer ? (
+          <div className="p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-300 dark:border-amber-700 shadow-sm">
+              <UserPlus className="w-8 h-8" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-gray-900 dark:text-white">Member Account Required to Order</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-300 max-w-sm mx-auto font-medium">
+                Please create an account or sign in with your address first. Your account address matches you to your nearest K-Matt Supermarket branch (e.g. Kericho, Nakuru, Eldoret) and calculates delivery distance.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenAuthModal) onOpenAuthModal();
+                }}
+                className="w-full bg-plum hover:bg-plum-dark text-white font-extrabold text-xs uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98"
+              >
+                <UserPlus className="w-4 h-4 text-white" />
+                <span>Create Account / Sign In to Continue</span>
+              </button>
+            </div>
+          </div>
+        ) : placedOrder ? (
           <div className="p-8 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-green-50 text-green flex items-center justify-center mx-auto border border-green-200">
               <CheckCircle className="w-10 h-10 text-green" />
@@ -231,7 +290,12 @@ export default function CheckoutModal({
                     required 
                     placeholder="e.g., John Kamau" 
                     value={name} 
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setName(val);
+                      syncCustomerProfile({ name: val });
+                    }}
+                    onBlur={() => syncCustomerProfile({ name })}
                     className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
                   />
                 </div>
@@ -247,7 +311,12 @@ export default function CheckoutModal({
                       required 
                       placeholder="0712345678" 
                       value={phone} 
-                      onChange={e => setPhone(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setPhone(val);
+                        syncCustomerProfile({ phone: val });
+                      }}
+                      onBlur={() => syncCustomerProfile({ phone })}
                       className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
                     />
                   </div>
@@ -261,7 +330,12 @@ export default function CheckoutModal({
                       type="email" 
                       placeholder="john@example.com" 
                       value={email} 
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEmail(val);
+                        syncCustomerProfile({ email: val });
+                      }}
+                      onBlur={() => syncCustomerProfile({ email })}
                       className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
                     />
                   </div>
@@ -273,7 +347,11 @@ export default function CheckoutModal({
                   <label className="block text-gray-500 font-bold mb-1">Delivery County (47 Counties)</label>
                   <select
                     value={selectedCounty}
-                    onChange={e => setSelectedCounty(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSelectedCounty(val);
+                      syncCustomerProfile({ county: val, city: val });
+                    }}
                     className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-bold text-gray-900 dark:text-white outline-none focus:border-plum"
                   >
                     {KENYA_COUNTIES.map(c => (
@@ -293,7 +371,12 @@ export default function CheckoutModal({
                       required 
                       placeholder="Apt, Street, Estate, Landmark" 
                       value={address} 
-                      onChange={e => setAddress(e.target.value)}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setAddress(val);
+                        syncCustomerProfile({ address: val });
+                      }}
+                      onBlur={() => syncCustomerProfile({ address })}
                       className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
                     />
                   </div>

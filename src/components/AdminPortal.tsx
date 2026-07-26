@@ -4,10 +4,11 @@ import {
   Plus, Edit, Trash2, Check, RefreshCw, Mail, Search, DollarSign,
   TrendingDown, Clock, Calendar, AlertCircle, ShieldAlert, Sparkles, TrendingUp, CheckCircle2, ArrowRight,
   Eye, Sun, Moon, ShieldCheck, Activity, Users, UserPlus, Shield, Key, FileText, Download, Filter, Building, Briefcase, X,
-  Smartphone, Fingerprint, ChevronRight
+  Smartphone, Fingerprint, ChevronRight, Building2, ArrowLeftRight
 } from 'lucide-react';
 import { Product, Order, StoreSettings, AdminUser, AuditLogEntry, AdminRole } from '../types';
 import { formatMoney, uid, defaultProducts } from '../data/catalog';
+import { BRANCHES, getProductStockForBranch } from '../data/branches';
 
 interface AdminPortalProps {
   products: Product[];
@@ -85,11 +86,15 @@ export default function AdminPortal({
   const isReadOnly = isAuditor;
 
   // Tabs visibility
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'forecast' | 'settings' | 'admins' | 'logs'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'forecast' | 'branches' | 'settings' | 'admins' | 'logs'>('products');
 
   // Forecast State
   const [forecastFilter, setForecastFilter] = useState<'all' | 'critical' | 'out_of_stock' | 'high_velocity'>('all');
   const [forecastSearch, setForecastSearch] = useState('');
+
+  // Multi-Branch Inventory Matrix Search & Branch Stock state
+  const [matrixSearch, setMatrixSearch] = useState('');
+  const [pBranchStock, setPBranchStock] = useState<Record<string, number>>({});
 
   // Product Edit State
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
@@ -125,6 +130,103 @@ export default function AdminPortal({
   const [newAdminRole, setNewAdminRole] = useState<AdminRole>('inventory_manager');
   const [newAdminPin, setNewAdminPin] = useState('1234');
   const [newAdminDept, setNewAdminDept] = useState('Operations');
+
+  // Branch Inventory Management & Stock Transfer State
+  const [adminSelectedBranch, setAdminSelectedBranch] = useState<string>('all');
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [transferProduct, setTransferProduct] = useState<Product | null>(null);
+  const [transferFromBranch, setTransferFromBranch] = useState<string>('kericho');
+  const [transferToBranch, setTransferToBranch] = useState<string>('nakuru');
+  const [transferQty, setTransferQty] = useState<number>(5);
+
+  const handleUpdateBranchStock = (productId: number, branchId: string, newQty: number) => {
+    if (isReadOnly) {
+      onShowToast('Auditor Mode: Read-only access', 'error');
+      return;
+    }
+    const target = products.find(p => p.id === productId);
+    if (!target) return;
+
+    const updated = products.map(p => {
+      if (p.id === productId) {
+        const bMap = p.branchStock ? { ...p.branchStock } : {};
+        BRANCHES.forEach(b => {
+          if (bMap[b.id] === undefined) {
+            bMap[b.id] = getProductStockForBranch(p, b.id);
+          }
+        });
+        bMap[branchId] = Math.max(0, newQty);
+        const total = Object.values(bMap).reduce((s, val) => s + (Number(val) || 0), 0);
+        return {
+          ...p,
+          branchStock: bMap,
+          stock: total,
+        };
+      }
+      return p;
+    });
+
+    onProductsChange(updated);
+    const branchObj = BRANCHES.find(b => b.id === branchId);
+    if (onAddAuditLog) {
+      onAddAuditLog(
+        'inventory',
+        'BRANCH_STOCK_UPDATE',
+        `Updated stock for "${target.name}" at ${branchObj?.name || branchId} to ${newQty} units`,
+        productId
+      );
+    }
+    onShowToast(`Updated ${branchObj?.town || branchId} stock for "${target.name}"`, 'success');
+  };
+
+  const handleExecuteStockTransfer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transferProduct || transferFromBranch === transferToBranch || transferQty <= 0) return;
+
+    const fromCurrent = getProductStockForBranch(transferProduct, transferFromBranch);
+    if (fromCurrent < transferQty) {
+      onShowToast(`Cannot transfer ${transferQty} units! Source branch only has ${fromCurrent} units.`, 'error');
+      return;
+    }
+
+    const updated = products.map(p => {
+      if (p.id === transferProduct.id) {
+        const currentMap = p.branchStock ? { ...p.branchStock } : {};
+        BRANCHES.forEach(b => {
+          if (currentMap[b.id] === undefined) {
+            currentMap[b.id] = getProductStockForBranch(p, b.id);
+          }
+        });
+        const fromVal = currentMap[transferFromBranch];
+        const toVal = currentMap[transferToBranch];
+
+        currentMap[transferFromBranch] = Math.max(0, fromVal - transferQty);
+        currentMap[transferToBranch] = toVal + transferQty;
+
+        const sumTotal = Object.values(currentMap).reduce((acc, v) => acc + (Number(v) || 0), 0);
+
+        return {
+          ...p,
+          branchStock: currentMap,
+          stock: sumTotal
+        };
+      }
+      return p;
+    });
+
+    onProductsChange(updated);
+
+    const fromB = BRANCHES.find(b => b.id === transferFromBranch)?.name || transferFromBranch;
+    const toB = BRANCHES.find(b => b.id === transferToBranch)?.name || transferToBranch;
+
+    if (onAddAuditLog) {
+      onAddAuditLog('inventory', 'Inter-Branch Stock Transfer', `Transferred ${transferQty} units of "${transferProduct.name}" from ${fromB} to ${toB}`, transferProduct.id);
+    }
+
+    onShowToast(`Transferred ${transferQty} units of "${transferProduct.name}" from ${fromB} to ${toB}`, 'success');
+    setTransferModalOpen(false);
+    setTransferProduct(null);
+  };
 
   // Quick Stats Calculations
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -269,6 +371,11 @@ export default function AdminPortal({
       onShowToast('Auditor Mode: Read-only access', 'error');
       return;
     }
+
+    const updatedBStock = { ...pBranchStock };
+    const calculatedTotal = Object.values(updatedBStock).reduce((sum, val) => sum + (Number(val) || 0), 0);
+    const finalStock = calculatedTotal > 0 ? calculatedTotal : pStock;
+
     if (editingProduct && editingProduct.id) {
       // Update existing
       const updated = products.map(p => p.id === editingProduct.id ? {
@@ -278,7 +385,8 @@ export default function AdminPortal({
         category: pCategory,
         price: pPrice,
         originalPrice: pOriginalPrice,
-        stock: pStock,
+        stock: finalStock,
+        branchStock: updatedBStock,
         image: pImage || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80',
         description: pDesc
       } : p);
@@ -287,7 +395,7 @@ export default function AdminPortal({
         onAddAuditLog(
           'products',
           'UPDATE_PRODUCT',
-          `Updated product details for "${pName}" (Price: KSh ${pPrice}, Stock: ${pStock}, Category: ${pCategory})`,
+          `Updated product details for "${pName}" (Price: KSh ${pPrice}, Stock: ${finalStock}, Category: ${pCategory})`,
           editingProduct.id
         );
       }
@@ -302,7 +410,8 @@ export default function AdminPortal({
         category: pCategory,
         price: pPrice,
         originalPrice: pOriginalPrice,
-        stock: pStock,
+        stock: finalStock,
+        branchStock: updatedBStock,
         image: pImage || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80',
         description: pDesc,
         rating: 5,
@@ -314,7 +423,7 @@ export default function AdminPortal({
         onAddAuditLog(
           'products',
           'CREATE_PRODUCT',
-          `Added new product "${pName}" to catalog (Category: ${pCategory}, Price: KSh ${pPrice}, Initial Stock: ${pStock})`,
+          `Added new product "${pName}" to catalog (Category: ${pCategory}, Price: KSh ${pPrice}, Initial Stock: ${finalStock})`,
           newId
         );
       }
@@ -338,6 +447,13 @@ export default function AdminPortal({
     setPStock(p.stock);
     setPImage(p.image);
     setPDesc(p.description || '');
+
+    const bStockMap: Record<string, number> = {};
+    BRANCHES.forEach(b => {
+      bStockMap[b.id] = getProductStockForBranch(p, b.id);
+    });
+    setPBranchStock(p.branchStock ? { ...p.branchStock } : bStockMap);
+
     setIsAddingProduct(true);
   };
 
@@ -823,6 +939,24 @@ export default function AdminPortal({
           {/* Quick Metrics & Controls Bar */}
           <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end">
             
+            {/* Global Supermarket Branch Scope Selector */}
+            <div className="flex items-center gap-1.5 bg-plum-dark/90 border border-white/20 px-3 py-1.5 rounded-xl text-xs text-white shrink-0 shadow-sm">
+              <Building2 className="w-4 h-4 text-amber-300 shrink-0" />
+              <span className="text-[10px] font-bold uppercase text-gray-200 hidden xl:inline">Branch Scope:</span>
+              <select
+                value={adminSelectedBranch}
+                onChange={(e) => setAdminSelectedBranch(e.target.value)}
+                className="bg-transparent text-xs font-extrabold text-white outline-none cursor-pointer pr-1"
+              >
+                <option value="all" className="bg-gray-900 text-white">All Supermarkets (HQ View)</option>
+                {BRANCHES.map(b => (
+                  <option key={b.id} value={b.id} className="bg-gray-900 text-white">
+                    {b.name} ({b.town})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Active Admin Details Chip */}
             <div className="hidden lg:flex items-center gap-2 bg-plum-dark border border-white/10 px-3 py-1.5 rounded-xl text-xs text-gray-200">
               <div className="w-6 h-6 rounded-full bg-white text-plum font-black text-[10px] flex items-center justify-center">
@@ -928,6 +1062,18 @@ export default function AdminPortal({
             </button>
           )}
 
+          {/* Branches & Inter-Branch Transfers Tab */}
+          {(isSuperAdmin || isInventoryManager || isAuditor) && (
+            <button 
+              onClick={() => setActiveTab('branches')}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'branches' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            >
+              <Building2 className="w-4 h-4 text-amber-300" />
+              <span>Branches & Transfers</span>
+              <span className="bg-amber-400/20 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full">{BRANCHES.length} Active</span>
+            </button>
+          )}
+
           {/* Admin Management Tab (Super Admin Only) */}
           {isSuperAdmin && (
             <button 
@@ -980,9 +1126,14 @@ export default function AdminPortal({
                     setPCategory('food cupboard');
                     setPPrice(100);
                     setPOriginalPrice(120);
-                    setPStock(20);
+                    setPStock(30);
                     setPImage('');
                     setPDesc('');
+                    const initBStock: Record<string, number> = {};
+                    BRANCHES.forEach(b => {
+                      initBStock[b.id] = b.id === 'kericho' ? 10 : 4;
+                    });
+                    setPBranchStock(initBStock);
                     setIsAddingProduct(true);
                   }}
                   className="bg-plum hover:bg-plum-dark text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
@@ -1056,13 +1207,13 @@ export default function AdminPortal({
                       </div>
 
                       <div>
-                        <label className="block font-extrabold mb-1">Stock Quantity *</label>
+                        <label className="block font-extrabold mb-1">Total HQ Stock (Sum across branches)</label>
                         <input 
                           type="number" 
                           required 
-                          value={pStock} 
-                          onChange={(e) => setPStock(Number(e.target.value))}
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                          readOnly
+                          value={Object.values(pBranchStock).reduce((acc, val) => acc + (Number(val) || 0), 0) || pStock} 
+                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 text-gray-900 dark:text-white font-black cursor-not-allowed"
                         />
                       </div>
 
@@ -1085,6 +1236,42 @@ export default function AdminPortal({
                           onChange={(e) => setPOriginalPrice(Number(e.target.value))}
                           className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                         />
+                      </div>
+                    </div>
+
+                    {/* Multi-Branch Stock Allocation Panel */}
+                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-plum dark:text-pink-400" />
+                          <span className="font-extrabold text-gray-900 dark:text-white">Branch Stock Breakdown</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-500">
+                          Total: <strong className="text-plum dark:text-pink-400 font-black">{Object.values(pBranchStock).reduce((s, v) => s + (Number(v) || 0), 0)} units</strong>
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {BRANCHES.map(b => (
+                          <div key={b.id} className="p-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 flex flex-col gap-1">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-gray-700 dark:text-gray-300">
+                              <span className="truncate">{b.town}</span>
+                              {b.isMain && <span className="bg-plum/10 text-plum text-[9px] px-1 rounded font-black">Main HQ</span>}
+                            </div>
+                            <input 
+                              type="number"
+                              min="0"
+                              value={pBranchStock[b.id] ?? 0}
+                              onChange={(e) => {
+                                const val = Math.max(0, Number(e.target.value));
+                                const newMap = { ...pBranchStock, [b.id]: val };
+                                setPBranchStock(newMap);
+                                const sum = Object.values(newMap).reduce((s, v) => s + (Number(v) || 0), 0);
+                                setPStock(sum);
+                              }}
+                              className="w-full p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-black text-center text-xs"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -1165,20 +1352,59 @@ export default function AdminPortal({
                           {formatMoney(p.price)}
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${p.stock <= 5 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : p.stock <= 15 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
-                              {p.stock} units
-                            </span>
-                            {!isReadOnly && !isOrderManager && (
-                              <button 
-                                onClick={() => handleRestockProduct(p.id, 20)}
-                                className="bg-gray-100 dark:bg-gray-800 hover:bg-plum hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
-                                title="Quick Restock +20 units"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
+                          {(() => {
+                            const selectedBranchStock = adminSelectedBranch === 'all' 
+                              ? p.stock 
+                              : getProductStockForBranch(p, adminSelectedBranch);
+                            const branchObj = BRANCHES.find(b => b.id === adminSelectedBranch);
+
+                            return (
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  {selectedBranchStock <= 0 ? (
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-red-500/20 text-red-500 border border-red-500/30 flex items-center gap-1">
+                                      <AlertCircle className="w-3 h-3 text-red-500" />
+                                      {adminSelectedBranch === 'all' ? 'Out of Stock (HQ)' : `${branchObj?.town || 'Branch'}: Out of Stock`}
+                                    </span>
+                                  ) : (
+                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${selectedBranchStock <= 5 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : selectedBranchStock <= 15 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                                      {selectedBranchStock} units {adminSelectedBranch !== 'all' && `at ${branchObj?.town}`}
+                                    </span>
+                                  )}
+
+                                  {!isReadOnly && !isOrderManager && (
+                                    <button 
+                                      onClick={() => handleRestockProduct(p.id, 20)}
+                                      className="bg-gray-100 dark:bg-gray-800 hover:bg-plum hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                                      title="Quick Restock +20 units"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+
+                                {adminSelectedBranch !== 'all' && (
+                                  <div className="text-[10px] text-gray-500 flex items-center gap-1.5 font-bold">
+                                    <span>HQ Total: <strong>{p.stock} units</strong></span>
+                                    <span>•</span>
+                                    <button 
+                                      type="button"
+                                      onClick={() => {
+                                        setTransferProduct(p);
+                                        setTransferFromBranch('kericho');
+                                        setTransferToBranch(adminSelectedBranch);
+                                        setTransferModalOpen(true);
+                                      }}
+                                      className="text-plum dark:text-pink-400 hover:underline flex items-center gap-0.5 cursor-pointer font-black"
+                                    >
+                                      <ArrowLeftRight className="w-2.5 h-2.5" />
+                                      Transfer Stock
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
@@ -1357,9 +1583,15 @@ export default function AdminPortal({
                           {p.name}
                         </td>
                         <td className="py-3 px-4 font-extrabold">
-                          <span className={p.stock <= 5 ? 'text-red-500' : 'text-gray-900 dark:text-white'}>
-                            {p.stock} units
-                          </span>
+                          {p.stock <= 0 ? (
+                            <span className="text-red-500 font-black bg-red-500/10 px-2 py-0.5 rounded text-[10px]">
+                              0 units (Out of Stock)
+                            </span>
+                          ) : (
+                            <span className={p.stock <= 5 ? 'text-red-500' : 'text-gray-900 dark:text-white'}>
+                              {p.stock} units
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4 font-bold text-gray-700 dark:text-gray-300">
                           {p.sales30Days} units
@@ -1384,6 +1616,255 @@ export default function AdminPortal({
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB: MULTI-BRANCH NETWORK & STOCK TRANSFERS --- */}
+        {activeTab === 'branches' && (
+          <div className="space-y-6">
+            {/* Header & Quick Actions */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs">
+              <div>
+                <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <Building2 className="w-6 h-6 text-plum dark:text-pink-400" />
+                  <span>All Supermarket Branches & Inter-Branch Logistics</span>
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Control live stock levels, perform direct stock transfers, and oversee operations across all 6 K-Matt Supermarket branches.
+                </p>
+              </div>
+
+              {!isReadOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (products.length > 0) setTransferProduct(products[0]);
+                    setTransferModalOpen(true);
+                  }}
+                  className="bg-plum hover:bg-plum-dark text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+                >
+                  <ArrowLeftRight className="w-4 h-4 text-amber-300" />
+                  <span>Execute Inter-Branch Transfer</span>
+                </button>
+              )}
+            </div>
+
+            {/* 6 Branch Network Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {BRANCHES.map(b => {
+                let inStockCount = 0;
+                let outOfStockCount = 0;
+                let totalStockUnits = 0;
+
+                products.forEach(p => {
+                  const bStock = getProductStockForBranch(p, b.id);
+                  if (bStock <= 0) outOfStockCount++;
+                  else inStockCount++;
+                  totalStockUnits += bStock;
+                });
+
+                const isSelected = adminSelectedBranch === b.id;
+
+                return (
+                  <div 
+                    key={b.id} 
+                    className={`bg-white dark:bg-gray-900 rounded-3xl p-5 border transition-all space-y-4 shadow-xs relative ${
+                      isSelected 
+                        ? 'border-plum dark:border-pink-500 ring-2 ring-plum/20 dark:ring-pink-500/20' 
+                        : 'border-gray-150 dark:border-gray-800 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-black text-base text-gray-900 dark:text-white">{b.name}</h3>
+                          {b.isMain && (
+                            <span className="bg-plum text-white text-[9px] font-black px-2 py-0.5 rounded-full">
+                              HQ Main
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 font-bold flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-plum" />
+                          <span>{b.address}, {b.town} ({b.county} County)</span>
+                        </p>
+                      </div>
+
+                      <div className="w-8 h-8 rounded-2xl bg-plum/10 text-plum flex items-center justify-center font-black text-xs">
+                        {b.town.charAt(0)}
+                      </div>
+                    </div>
+
+                    {/* Stock Metrics for this Branch */}
+                    <div className="grid grid-cols-3 gap-2 bg-gray-50 dark:bg-gray-800/60 p-3 rounded-2xl text-center">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Available SKUs</p>
+                        <p className="text-sm font-black text-emerald-500">{inStockCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Stockouts</p>
+                        <p className="text-sm font-black text-red-500">{outOfStockCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Total Units</p>
+                        <p className="text-sm font-black text-plum dark:text-pink-400">{totalStockUnits}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-[11px] text-gray-500 space-y-1">
+                      <p className="flex items-center gap-1.5 font-medium">
+                        <Phone className="w-3 h-3 text-gray-400" />
+                        <span>Support Line: {b.phone}</span>
+                      </p>
+                      <p className="flex items-center gap-1.5 font-medium">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span>Hours: 7:00 AM – 9:00 PM Daily</span>
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between border-t border-gray-100 dark:border-gray-800 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAdminSelectedBranch(isSelected ? 'all' : b.id)}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                          isSelected 
+                            ? 'bg-plum text-white shadow-xs' 
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                        }`}
+                      >
+                        {isSelected ? '✓ Viewing Scope' : 'Filter View'}
+                      </button>
+
+                      {!isReadOnly && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (products.length > 0) setTransferProduct(products[0]);
+                            setTransferFromBranch(b.id);
+                            setTransferModalOpen(true);
+                          }}
+                          className="py-2 px-3 rounded-xl bg-amber-400/20 text-amber-900 dark:text-amber-300 hover:bg-amber-400/30 text-xs font-black transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <ArrowLeftRight className="w-3.5 h-3.5" />
+                          <span>Transfer</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Multi-Branch Stock Control Matrix */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl shadow-xs overflow-hidden space-y-4 p-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-150 dark:border-gray-800 pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                    <Package className="w-5 h-5 text-plum" />
+                    <span>Multi-Branch Inventory Stock Matrix</span>
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Real-time stock quantities across all 6 branches. Edit stock levels inline to synchronize inventory instantly.
+                  </p>
+                </div>
+
+                <div className="w-full md:w-72">
+                  <input
+                    type="text"
+                    placeholder="Search product matrix..."
+                    value={matrixSearch}
+                    onChange={(e) => setMatrixSearch(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 font-extrabold border-b border-gray-200 dark:border-gray-800">
+                    <tr>
+                      <th className="py-3 px-4 min-w-[200px]">Product Item</th>
+                      <th className="py-3 px-3">Category</th>
+                      <th className="py-3 px-3 text-center bg-plum/5 dark:bg-plum/10 text-plum dark:text-pink-400 font-black">
+                        Total HQ
+                      </th>
+                      {BRANCHES.map(b => (
+                        <th key={b.id} className="py-3 px-3 text-center min-w-[90px]">
+                          {b.town}
+                        </th>
+                      ))}
+                      {!isReadOnly && <th className="py-3 px-4 text-right">Transfer</th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                    {products
+                      .filter(p => !matrixSearch || p.name.toLowerCase().includes(matrixSearch.toLowerCase()) || p.category.toLowerCase().includes(matrixSearch.toLowerCase()))
+                      .map(p => {
+                        return (
+                          <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2.5">
+                                <img src={p.image} alt={p.name} className="w-8 h-8 object-cover rounded-lg border border-gray-200 dark:border-gray-700" />
+                                <div>
+                                  <p className="font-extrabold text-gray-900 dark:text-white text-xs leading-tight">{p.name}</p>
+                                  <p className="text-[10px] text-gray-500">{formatMoney(p.price)}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 capitalize font-semibold text-gray-600 dark:text-gray-400 text-[11px]">
+                              {p.category}
+                            </td>
+                            <td className="py-3 px-3 text-center font-black text-plum dark:text-pink-400 bg-plum/5 dark:bg-plum/10 text-sm">
+                              {p.stock}
+                            </td>
+                            {BRANCHES.map(b => {
+                              const bQty = getProductStockForBranch(p, b.id);
+                              return (
+                                <td key={b.id} className="py-2 px-2 text-center">
+                                  {isReadOnly ? (
+                                    <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black ${
+                                      bQty <= 0 ? 'bg-red-500/20 text-red-500' : bQty <= 5 ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'
+                                    }`}>
+                                      {bQty}
+                                    </span>
+                                  ) : (
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={bQty}
+                                      onChange={(e) => handleUpdateBranchStock(p.id, b.id, Number(e.target.value))}
+                                      className={`w-14 p-1 rounded-lg border text-center text-xs font-black outline-none transition-all ${
+                                        bQty <= 0 
+                                          ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' 
+                                          : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:border-plum'
+                                      }`}
+                                    />
+                                  )}
+                                </td>
+                              );
+                            })}
+                            {!isReadOnly && (
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTransferProduct(p);
+                                    setTransferModalOpen(true);
+                                  }}
+                                  className="p-1.5 rounded-lg bg-gray-100 hover:bg-plum hover:text-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
+                                  title={`Transfer ${p.name}`}
+                                >
+                                  <ArrowLeftRight className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

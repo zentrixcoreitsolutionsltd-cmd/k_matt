@@ -3,10 +3,12 @@ import {
   LayoutGrid, Boxes, Carrot, Coffee, Baby, Plug, Sparkles, Wine, 
   Pencil, PawPrint, Wrench, Armchair, ChevronLeft, ChevronRight, 
   Heart, ShoppingCart, Check, Star, AlertCircle, Sparkle,
-  HeartPulse, Shirt, Trophy, BookOpen, Share2, Eye, ArrowUpDown
+  HeartPulse, Shirt, Trophy, BookOpen, Share2, Eye, ArrowUpDown,
+  Building2, MapPin
 } from 'lucide-react';
 import { Product, StoreSettings, Order, Customer, CartItem } from '../types';
 import { categoryMeta, formatMoney, calcDiscount } from '../data/catalog';
+import { BRANCHES, getProductStockForBranch, getOtherBranchesWithStock, getNearestBranchForCustomer } from '../data/branches';
 import QuickViewDrawer from './QuickViewDrawer';
 
 interface StorefrontProps {
@@ -26,6 +28,8 @@ interface StorefrontProps {
   currentCustomer?: Customer | null;
   cart: CartItem[];
   onShowToast?: (msg: string, type: 'success' | 'error' | 'info') => void;
+  selectedBranchId?: string;
+  onOpenBranchModal?: () => void;
 }
 
 export default function Storefront({
@@ -44,7 +48,9 @@ export default function Storefront({
   orders = [],
   currentCustomer = null,
   cart,
-  onShowToast
+  onShowToast,
+  selectedBranchId = 'kericho',
+  onOpenBranchModal
 }: StorefrontProps) {
   
   // Carousel DOM refs
@@ -133,9 +139,9 @@ export default function Storefront({
     }
   };
 
-  // Filter products based on search or category
+  // Filter products based on search or category (Only show items with stock > 0)
   const getFilteredProducts = () => {
-    let list = [...products];
+    let list = products.filter(p => p.stock > 0);
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
       list = list.filter(p => 
@@ -286,8 +292,13 @@ export default function Storefront({
   const renderProductCard = (p: Product, showBadge = false) => {
     const isWished = wishlist.includes(p.id);
     const discount = calcDiscount(p.price, p.originalPrice);
-    const isOutOfStock = p.stock <= 0;
-    const isLowStock = !isOutOfStock && p.stock <= settings.lowStockThreshold;
+    
+    // Branch-specific stock check
+    const currentBranchObj = BRANCHES.find(b => b.id === selectedBranchId) || BRANCHES[0];
+    const branchStock = getProductStockForBranch(p, selectedBranchId);
+    const isBranchOutOfStock = branchStock <= 0;
+    const isBranchLowStock = !isBranchOutOfStock && branchStock <= settings.lowStockThreshold;
+    const otherBranchStocked = getOtherBranchesWithStock(p, selectedBranchId);
 
     return (
       <div 
@@ -410,22 +421,25 @@ export default function Storefront({
             </div>
           </div>
 
-          <div className="mt-auto pt-2">
-            {isOutOfStock ? (
-              <div className="text-center text-[10px] font-bold text-plum bg-plum/10 dark:bg-pink-950/40 py-1 rounded-md mb-2 flex items-center justify-center gap-1.5 border border-plum/20">
-                <AlertCircle className="w-3.5 h-3.5 text-plum" />
-                <span>Sold Out</span>
-              </div>
-            ) : isLowStock ? (
-              <div className="text-center text-[10px] font-bold text-plum bg-plum/5 dark:bg-pink-950/20 py-1 rounded-md mb-2 border border-plum/20">
-                Only {p.stock} left in stock
-              </div>
-            ) : null}
+          <div className="mt-auto pt-2 space-y-1.5">
+            {/* Stock Warning only if customer has added max stock to cart */}
+            {(() => {
+              const inCart = cart.find(ci => ci.id === p.id);
+              if (inCart && inCart.qty >= branchStock) {
+                return (
+                  <div className="text-[10px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 p-1 rounded-md text-center border border-amber-300 dark:border-amber-800 flex items-center justify-center gap-1">
+                    <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
+                    <span>Max stock in cart ({branchStock} available)</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             <button 
               onClick={() => handleAddToCartClick(p)}
-              disabled={isOutOfStock}
-              className={`w-full py-2 rounded-lg font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors uppercase tracking-wider ${isOutOfStock ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : addedProductId === p.id ? 'bg-plum-dark text-white' : 'bg-plum hover:bg-plum-dark text-white'}`}
+              disabled={isBranchOutOfStock}
+              className={`w-full py-2 rounded-lg font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors uppercase tracking-wider ${isBranchOutOfStock ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed' : addedProductId === p.id ? 'bg-plum-dark text-white' : 'bg-plum hover:bg-plum-dark text-white'}`}
             >
               {addedProductId === p.id ? (
                 <>
@@ -435,7 +449,7 @@ export default function Storefront({
               ) : (
                 <>
                   <ShoppingCart className="w-3.5 h-3.5 text-white" />
-                  <span>{isOutOfStock ? 'Out of Stock' : 'Add to Cart'}</span>
+                  <span>{isBranchOutOfStock ? `Out of Stock (${currentBranchObj.town})` : 'Add to Cart'}</span>
                 </>
               )}
             </button>
@@ -452,14 +466,14 @@ export default function Storefront({
 
   const getSecondaryPartProducts = () => {
     const primaryCategories = ['food cupboard', 'fresh food', 'beverages', 'liquor'];
-    return products.filter(p => !primaryCategories.includes(p.category)).slice(0, 10);
+    return products.filter(p => p.stock > 0 && !primaryCategories.includes(p.category)).slice(0, 10);
   };
 
-  // Filter lists for shelfs
-  const deals = products.filter(p => p.originalPrice > p.price);
-  const fresh = products.filter(p => p.category === 'fresh food');
-  const beverages = products.filter(p => p.category === 'beverages');
-  const liquor = products.filter(p => p.category === 'liquor');
+  // Filter lists for shelfs (Only show items in stock)
+  const deals = products.filter(p => p.stock > 0 && p.originalPrice > p.price);
+  const fresh = products.filter(p => p.stock > 0 && p.category === 'fresh food');
+  const beverages = products.filter(p => p.stock > 0 && p.category === 'beverages');
+  const liquor = products.filter(p => p.stock > 0 && p.category === 'liquor');
 
   // Groups for Brand Chips section
   const brandGroupCategories = [
@@ -1184,6 +1198,7 @@ export default function Storefront({
         }}
         onShowToast={onShowToast}
         settings={settings}
+        selectedBranchId={selectedBranchId}
       />
     </div>
   );

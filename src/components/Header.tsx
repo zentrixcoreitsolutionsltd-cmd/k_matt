@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Phone, MapPin, Truck, Lock, Menu, Search, User, Heart, ShoppingCart, 
   X, LayoutGrid, LogOut, Store, ArrowRight, Mic, MicOff, Sun, Moon,
-  ChevronDown, HelpCircle, ShieldCheck, Tag, Sparkles, ChevronRight, Globe
+  ChevronDown, HelpCircle, ShieldCheck, Tag, Sparkles, ChevronRight, Globe, Building2
 } from 'lucide-react';
 import { StoreSettings, CategoryMeta } from '../types';
 import { categoryMeta, formatMoney, CURRENCIES, LANG_TO_CURRENCY, CURRENCY_TO_LANG, getGlobalCurrency, setGlobalCurrency } from '../data/catalog';
 import { getGlobalLang, setGlobalLang, applyGoogleTranslate, t } from '../data/i18n';
 import { KENYA_COUNTIES } from '../data/counties';
+import { BRANCHES } from '../data/branches';
 import { LanguageCurrencyModal } from './LanguageCurrencyModal';
 
 interface HeaderProps {
@@ -27,6 +28,8 @@ interface HeaderProps {
   isDark: boolean;
   onToggleTheme: () => void;
   onToggleUserProfile: () => void;
+  selectedBranchId: string;
+  onOpenBranchModal: () => void;
 }
 
 export default function Header({
@@ -45,7 +48,9 @@ export default function Header({
   onLogout,
   isDark,
   onToggleTheme,
-  onToggleUserProfile
+  onToggleUserProfile,
+  selectedBranchId,
+  onOpenBranchModal
 }: HeaderProps) {
   const getInitialLanguage = () => {
     return getGlobalLang();
@@ -59,6 +64,8 @@ export default function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [searchCategory, setSearchCategory] = useState('all');
+
+  const currentBranch = BRANCHES.find(b => b.id === selectedBranchId) || BRANCHES[0];
 
   useEffect(() => {
     const handleCurrChange = () => setCurrentCurrency(getGlobalCurrency());
@@ -287,6 +294,7 @@ export default function Header({
             </div>
           </div>
 
+
           {/* Deliver To County Widget (Desktop only) */}
           <div 
             className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-white/30 cursor-pointer relative shrink-0 transition-all max-w-[140px] lg:max-w-[155px]"
@@ -369,7 +377,7 @@ export default function Header({
           {/* Right Hand Navigation Widgets - Desktop Only */}
           <div className="hidden md:flex items-center gap-1 lg:gap-2.5 xl:gap-3.5 shrink-0" id="header-right-actions">
             
-            {/* Amazon & Kipchimatt Styled Language & Currency Selector Trigger */}
+            {/* Amazon & K-Matt Styled Language & Currency Selector Trigger */}
             <button
               type="button"
               onClick={() => setLangModalOpen(true)}
@@ -860,7 +868,7 @@ export default function Header({
 
             {/* Footer legalities */}
             <div className="bg-gray-50 dark:bg-gray-950 p-4 border-t border-gray-150 dark:border-gray-800 text-center text-[10px] text-gray-400 font-bold uppercase tracking-wider shrink-0 select-none">
-              Kipchimatt E-Commerce Platform v2.2
+              K-Matt E-Commerce Platform v2.2
             </div>
           </nav>
         </>
@@ -1073,7 +1081,7 @@ export default function Header({
               <div className="mx-4 mt-3 p-3 bg-plum/5 dark:bg-gray-800/60 rounded-xl border border-plum/10 dark:border-gray-700/60 text-xs">
                 <div className="flex items-center gap-1.5 font-black text-plum dark:text-white">
                   <Phone className="w-3.5 h-3.5" />
-                  <span>Kipchimatt Hotline</span>
+                  <span>K-Matt Hotline</span>
                 </div>
                 <p className="text-[11px] text-gray-600 dark:text-gray-400 font-bold mt-0.5">{settings.storePhone}</p>
                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 dark:text-gray-400">

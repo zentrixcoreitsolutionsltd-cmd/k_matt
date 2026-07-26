@@ -25,6 +25,8 @@ import ReceiptModal from './components/ReceiptModal';
 import CompareModal from './components/CompareModal';
 import SeasonalParticles from './components/SeasonalParticles';
 import CookieBanner from './components/CookieBanner';
+import BranchSelectorModal from './components/BranchSelectorModal';
+import { BRANCHES, getNearestBranchForCustomer, getDistanceToBranchKm } from './data/branches';
 
 interface ToastMsg {
   id: string;
@@ -87,8 +89,12 @@ export default function App() {
   // --- Session & Router States ---
   const [currentView, setCurrentView] = useState<'shop' | 'admin' | 'cart'>('shop');
   const [deliveryLocation, setDeliveryLocation] = useState<string>(() => {
-    return localStorage.getItem('kipchimatt_delivery_county') || 'Nairobi';
+    return localStorage.getItem('kmatt_delivery_county') || 'Kericho';
   });
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(() => {
+    return localStorage.getItem('kmatt_selected_branch') || 'kericho';
+  });
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [activeSearch, setActiveSearch] = useState<string>('');
 
@@ -139,6 +145,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('kipchimatt_audit_logs', JSON.stringify(auditLogs));
   }, [auditLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('kmatt_selected_branch', selectedBranchId);
+  }, [selectedBranchId]);
 
   const handleAddAuditLog = (
     category: AuditLogEntry['category'],
@@ -641,6 +651,18 @@ export default function App() {
     }
   }, [currentCustomer]);
 
+  // Auto-detect nearest K-Matt supermarket branch when customer profile address/county is set or updated
+  useEffect(() => {
+    if (currentCustomer && (currentCustomer.address || currentCustomer.county || currentCustomer.city)) {
+      const { branch, distanceKm } = getNearestBranchForCustomer(currentCustomer);
+      if (branch.id !== selectedBranchId) {
+        setSelectedBranchId(branch.id);
+        const userLoc = currentCustomer.city || currentCustomer.county || currentCustomer.address || 'Profile Location';
+        showToast(`📍 Nearest supermarket matched: ${branch.name} (~${distanceKm} km from ${userLoc})`, 'info');
+      }
+    }
+  }, [currentCustomer?.address, currentCustomer?.county, currentCustomer?.city]);
+
   // Synchronize initial delivery location county selection
   const handleDeliveryLocationChange = (county: string) => {
     setDeliveryLocation(county);
@@ -1058,6 +1080,20 @@ export default function App() {
         isDark={isDark}
         onToggleTheme={() => setIsDark(prev => !prev)}
         onToggleUserProfile={() => setUserProfileOpen(prev => !prev)}
+        selectedBranchId={selectedBranchId}
+        onOpenBranchModal={() => setIsBranchModalOpen(true)}
+      />
+
+      {/* Branch Selector Modal */}
+      <BranchSelectorModal 
+        isOpen={isBranchModalOpen}
+        onClose={() => setIsBranchModalOpen(false)}
+        selectedBranchId={selectedBranchId}
+        onSelectBranch={(branchId) => {
+          setSelectedBranchId(branchId);
+          const bObj = BRANCHES.find(b => b.id === branchId);
+          showToast(`📍 Switched to ${bObj?.name || branchId}! Inventory updated for ${bObj?.town} branch.`, 'info');
+        }}
       />
 
       {/* --- Main View Router --- */}
@@ -1132,6 +1168,8 @@ export default function App() {
             currentCustomer={currentCustomer}
             cart={cart}
             onShowToast={showToast}
+            selectedBranchId={selectedBranchId}
+            onOpenBranchModal={() => setIsBranchModalOpen(true)}
           />
         </div>
       ) : (
@@ -1143,6 +1181,7 @@ export default function App() {
           deliveryLocation={deliveryLocation}
           onDeliveryLocationChange={handleDeliveryLocationChange}
           onPlaceOrder={handlePlaceOrder}
+          selectedBranchId={selectedBranchId}
           onBackToShop={() => {
             setCurrentView('shop');
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1150,6 +1189,7 @@ export default function App() {
           orders={orders}
           currentCustomer={currentCustomer}
           onOpenAuthModal={() => setUserProfileOpen(true)}
+          onSaveCustomer={handleSaveCustomer}
         />
       )}
 
@@ -1248,7 +1288,7 @@ export default function App() {
                 Supermarket Links
               </h4>
               <div className="flex flex-col gap-2.5 text-xs font-semibold">
-                <a href="#" className="hover:text-white transition-colors">About Kipchimatt</a>
+                <a href="#" className="hover:text-white transition-colors">About K-Matt Supermarket</a>
                 <a href="#" className="hover:text-white transition-colors">Careers & Job Openings</a>
                 <a href="#" className="hover:text-white transition-colors">Our Kenyan Partners</a>
                 <button 
@@ -1350,6 +1390,12 @@ export default function App() {
         settings={settings}
         deliveryLocation={deliveryLocation}
         onPlaceOrder={handlePlaceOrder}
+        currentCustomer={currentCustomer}
+        onOpenAuthModal={() => {
+          setCheckoutOpen(false);
+          setUserProfileOpen(true);
+        }}
+        onSaveCustomer={handleSaveCustomer}
       />
 
       {/* Restricted Liquor Age Gate modal */}
@@ -1374,6 +1420,8 @@ export default function App() {
           onAddReview={handleAddReview}
           customer={currentCustomer}
           orders={orders}
+          selectedBranchId={selectedBranchId}
+          onOpenBranchModal={() => setIsBranchModalOpen(true)}
         />
       )}
 
@@ -1448,6 +1496,8 @@ export default function App() {
         onClose={() => setUserProfileOpen(false)}
         customer={currentCustomer}
         orders={orders}
+        selectedBranchId={selectedBranchId}
+        onSelectBranch={(id) => setSelectedBranchId(id)}
         onSaveCustomer={handleSaveCustomer}
         onLoginCustomer={handleLoginCustomer}
         onLogoutCustomer={handleLogoutCustomer}

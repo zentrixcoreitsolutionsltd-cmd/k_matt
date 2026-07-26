@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { 
   X, Heart, ShoppingCart, Share2, Star, Check, Plus, Minus, 
-  Eye, ExternalLink, ShieldCheck, Truck
+  Eye, ExternalLink, ShieldCheck, Truck, Building2, MapPin
 } from 'lucide-react';
 import { Product, StoreSettings } from '../types';
 import { formatMoney, calcDiscount } from '../data/catalog';
+import { BRANCHES, getProductStockForBranch } from '../data/branches';
 
 interface QuickViewDrawerProps {
   product: Product | null;
@@ -16,6 +17,7 @@ interface QuickViewDrawerProps {
   onFullDetails: (product: Product) => void;
   onShowToast?: (msg: string, type: 'success' | 'error' | 'info') => void;
   settings: StoreSettings;
+  selectedBranchId?: string;
 }
 
 export default function QuickViewDrawer({
@@ -27,7 +29,8 @@ export default function QuickViewDrawer({
   isWished,
   onFullDetails,
   onShowToast,
-  settings
+  settings,
+  selectedBranchId = 'kericho'
 }: QuickViewDrawerProps) {
   if (!isOpen || !product) return null;
 
@@ -166,20 +169,48 @@ export default function QuickViewDrawer({
             </div>
 
             {/* Stock status indicator */}
-            <div className="pt-1">
-              {isOutOfStock ? (
-                <span className="inline-block text-xs font-bold text-red bg-red/10 px-2.5 py-1 rounded-md">
-                  Out of Stock
-                </span>
-              ) : isLowStock ? (
-                <span className="inline-block text-xs font-bold text-amber-600 bg-amber-100 dark:bg-amber-950 dark:text-amber-300 px-2.5 py-1 rounded-md">
-                  Only {product.stock} items left
-                </span>
-              ) : (
-                <span className="inline-block text-xs font-bold text-green bg-green/10 px-2.5 py-1 rounded-md">
-                  In Stock • Ready for express delivery
-                </span>
-              )}
+            <div className="pt-1 space-y-2">
+              {(() => {
+                const activeBranchId = selectedBranchId || 'kericho';
+                const activeBranch = BRANCHES.find(b => b.id === activeBranchId) || BRANCHES[0];
+                const bStock = getProductStockForBranch(product, activeBranchId);
+
+                return (
+                  <div>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800 dark:text-gray-200">
+                      <Building2 className="w-4 h-4 text-plum dark:text-pink-400" />
+                      <span>{activeBranch.name}</span>
+                      {bStock <= 0 ? (
+                        <span className="text-red-600 bg-red-50 dark:bg-red-950/60 px-2 py-0.5 rounded font-black">Out of Stock</span>
+                      ) : qty >= bStock ? (
+                        <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-black text-xs border border-amber-300">Max stock reached ({bStock} available)</span>
+                      ) : null}
+                    </div>
+
+                    {/* Regional Branch Breakdown Pills */}
+                    <div className="mt-2 text-[10px] space-y-1">
+                      <span className="text-gray-500 font-bold block">Other K-Matt Branch Stocks:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {BRANCHES.filter(b => b.id !== activeBranchId).map(b => {
+                          const bs = getProductStockForBranch(product, b.id);
+                          return (
+                            <span 
+                              key={b.id}
+                              className={`px-2 py-0.5 rounded-md border font-semibold ${
+                                bs > 0 
+                                  ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300' 
+                                  : 'bg-red-50/50 dark:bg-red-950/20 border-red-100 text-red-400 line-through'
+                              }`}
+                            >
+                              {b.town}: {bs > 0 ? `${bs} left` : '0'}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

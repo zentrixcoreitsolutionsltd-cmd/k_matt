@@ -226,7 +226,7 @@ export default function Hero({ onExploreCategory, onScrollToDeals, onScrollToBra
               <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 flex items-center justify-between text-white text-[9px] sm:text-xs font-bold">
                 <span className="bg-plum-dark/90 backdrop-blur-md px-2 py-1 rounded-lg sm:rounded-xl border border-white/20 truncate max-w-[65%] flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3 text-green shrink-0" />
-                  <span className="truncate">Kipchimatt Certified</span>
+                  <span className="truncate">K-Matt Certified</span>
                 </span>
                 <span className="bg-green text-white font-black px-2 py-1 rounded-lg shrink-0 shadow-sm">
                   In Stock
