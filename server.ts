@@ -136,8 +136,16 @@ async function startServer() {
           const numId = Number(pId);
           const pIdx = products.findIndex(p => p.id === numId);
           if (pIdx !== -1) {
-            if (!products[pIdx].branchStock) products[pIdx].branchStock = {};
+            if (!products[pIdx].branchStock) {
+              products[pIdx].branchStock = {};
+              BRANCHES.forEach(b => {
+                products[pIdx].branchStock![b.id] = (b.id === 'kericho' || b.id === products[pIdx].branchId) ? products[pIdx].stock : Math.max(0, Math.round(products[pIdx].stock * 0.5));
+              });
+            }
             products[pIdx].branchStock![branchId] = Number(inventory[pId]);
+            products[pIdx].branchId = branchId;
+            const sumTotal = Object.values(products[pIdx].branchStock!).reduce((acc, val) => acc + (Number(val) || 0), 0);
+            products[pIdx].stock = sumTotal;
           }
         });
         writeData(PRODUCTS_FILE, products);

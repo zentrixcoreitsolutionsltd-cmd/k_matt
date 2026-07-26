@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { 
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, Cell 
+} from 'recharts';
+import { 
   Laptop, Lock, LogOut, Package, ShoppingBag, Settings, AlertTriangle, 
   Plus, Edit, Trash2, Check, RefreshCw, Mail, Search, DollarSign,
   TrendingDown, Clock, Calendar, AlertCircle, ShieldAlert, Sparkles, TrendingUp, CheckCircle2, ArrowRight,
   Eye, Sun, Moon, ShieldCheck, Activity, Users, UserPlus, Shield, Key, FileText, Download, Filter, Building, Briefcase, X,
-  Smartphone, Fingerprint, ChevronRight, Building2, ArrowLeftRight
+  Smartphone, Fingerprint, ChevronRight, Building2, ArrowLeftRight, Layers, BarChart3, CheckSquare, Square
 } from 'lucide-react';
 import { Product, Order, StoreSettings, AdminUser, AuditLogEntry, AdminRole } from '../types';
 import { formatMoney, uid, defaultProducts } from '../data/catalog';
