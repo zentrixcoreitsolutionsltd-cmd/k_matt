@@ -100,3 +100,16 @@ body {
 #google_translate_element {
   display: none !important;
 }
+/* Kill any default blue */
+.bg-blue-500, .bg-blue-600, .bg-blue-700, .bg-blue-900,
+.bg-slate-800, .bg-slate-900, .bg-gray-800, .bg-gray-900 {
+  background-color: var(--color-plum-dark) !important;
+}
+
+.text-blue-500, .text-blue-600 {
+  color: var(--color-orange) !important;
+}
+
+.border-blue-500 {
+  border-color: var(--color-plum) !important;
+}
