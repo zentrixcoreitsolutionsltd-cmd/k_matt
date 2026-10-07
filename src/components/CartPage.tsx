@@ -272,43 +272,43 @@ export default function CartPage({
         <div>
           <button 
             onClick={onBackToShop || onContinueShopping}
-            className="inline-flex items-center gap-2 text-xs font-extrabold text-plum dark:text-pink-400 hover:underline cursor-pointer mb-1.5"
+            className="inline-flex items-center gap-2 text-xs font-extrabold text-plum hover:underline cursor-pointer mb-1.5"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Continue Shopping Supermarket Items</span>
           </button>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
             Checkout & Order Fulfillment
           </h1>
         </div>
 
         {/* Step Progress Pill Bar */}
-        <div className="flex items-center gap-1 sm:gap-2 bg-white dark:bg-gray-900 p-1 sm:p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm text-[11px] sm:text-xs font-bold overflow-x-auto">
+        <div className="flex items-center gap-1 sm:gap-2 bg-white p-1 sm:p-1.5 rounded-2xl border border-gray-200 shadow-sm text-[11px] sm:text-xs font-bold overflow-x-auto">
           <button 
             onClick={() => setStep('basket')}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'basket' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'basket' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900'}`}
           >
             <ShoppingCart className="w-3.5 h-3.5" />
             <span>1. Cart ({cart.reduce((s, i) => s + i.qty, 0)})</span>
           </button>
 
-          <span className="text-gray-300 dark:text-gray-700">/</span>
+          <span className="text-gray-300">/</span>
 
           <button 
             onClick={() => cart.length > 0 && setStep('shipping')}
             disabled={cart.length === 0}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'shipping' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'shipping' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 disabled:opacity-40'}`}
           >
             <Truck className="w-3.5 h-3.5" />
             <span>2. Delivery</span>
           </button>
 
-          <span className="text-gray-300 dark:text-gray-700">/</span>
+          <span className="text-gray-300">/</span>
 
           <button 
             onClick={() => cart.length > 0 && name && phone && setStep('payment')}
             disabled={cart.length === 0 || !name || !phone}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'payment' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-40'}`}
+            className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 shrink-0 ${step === 'payment' ? 'bg-plum text-white shadow-md' : 'text-gray-500 hover:text-gray-900 disabled:opacity-40'}`}
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>3. Payment</span>
@@ -318,9 +318,9 @@ export default function CartPage({
 
       {/* If Cart Empty */}
       {cart.length === 0 && step !== 'confirmation' ? (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8 sm:p-12 text-center space-y-6 max-w-2xl mx-auto shadow-xl">
+        <div className="bg-white border border-gray-200 rounded-3xl p-8 sm:p-12 text-center space-y-6 max-w-2xl mx-auto shadow-xl">
           <div className="relative inline-block">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-plum/20 to-pink-500/10 text-plum dark:text-pink-400 mx-auto flex items-center justify-center shadow-inner">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-plum/20 to-pink-500/10 text-plum mx-auto flex items-center justify-center shadow-inner">
               <ShoppingCart className="w-12 h-12" />
             </div>
             <div className="absolute -top-2 -right-2 bg-white text-plum font-black text-xs px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 animate-bounce">
@@ -330,8 +330,8 @@ export default function CartPage({
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Your basket is currently empty</h2>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto leading-relaxed">
+            <h2 className="text-2xl font-black text-gray-900">Your basket is currently empty</h2>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
               Explore our vast supermarket catalog of fresh groceries, food cupboard essentials, electronics, and household items at everyday low prices.
             </p>
           </div>
@@ -349,40 +349,40 @@ export default function CartPage({
       ) : step === 'confirmation' && completedOrder ? (
         
         /* ORDER CONFIRMATION & RECEIPT SCREEN */
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-10 max-w-3xl mx-auto shadow-2xl space-y-6 animate-scale-up">
+        <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-10 max-w-3xl mx-auto shadow-2xl space-y-6 animate-scale-up">
           <div className="text-center space-y-2">
-            <div className="w-16 h-16 rounded-full bg-green-50 dark:bg-green-950/60 text-green flex items-center justify-center mx-auto border border-green-200 dark:border-green-800">
+            <div className="w-16 h-16 rounded-full bg-green-50 text-green flex items-center justify-center mx-auto border border-green-200">
               <CheckCircle2 className="w-10 h-10 text-green" />
             </div>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Order Confirmed & Paid!</h2>
-            <p className="text-xs text-gray-600 dark:text-gray-300">
-              Thank you for shopping at K-Matt. Receipt <strong className="text-plum dark:text-pink-400 font-extrabold">{completedOrder.receiptNo}</strong> is issued and saved.
+            <h2 className="text-2xl font-black text-gray-900">Order Confirmed & Paid!</h2>
+            <p className="text-xs text-gray-600">
+              Thank you for shopping at K-Matt. Receipt <strong className="text-plum font-extrabold">{completedOrder.receiptNo}</strong> is issued and saved.
             </p>
           </div>
 
           {/* Quick Summary Card */}
-          <div className="bg-gray-50 dark:bg-gray-800/60 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 text-xs space-y-3">
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-              <span className="text-gray-500 dark:text-gray-400 font-bold">Total Amount Paid:</span>
-              <span className="text-plum dark:text-pink-400 font-black text-base">{formatMoney(completedOrder.total)}</span>
+          <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 text-xs space-y-3">
+            <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+              <span className="text-gray-500 font-bold">Total Amount Paid:</span>
+              <span className="text-plum font-black text-base">{formatMoney(completedOrder.total)}</span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <span className="text-gray-400 font-bold block text-[10px] uppercase">Payment Method</span>
-                <span className="font-extrabold text-gray-900 dark:text-white">{completedOrder.payment}</span>
+                <span className="font-extrabold text-gray-900">{completedOrder.payment}</span>
               </div>
               <div>
                 <span className="text-gray-400 font-bold block text-[10px] uppercase">Transaction Ref</span>
-                <span className="font-extrabold text-gray-900 dark:text-white">{completedOrder.transactionRef}</span>
+                <span className="font-extrabold text-gray-900">{completedOrder.transactionRef}</span>
               </div>
               <div>
                 <span className="text-gray-400 font-bold block text-[10px] uppercase">Recipient</span>
-                <span className="font-extrabold text-gray-900 dark:text-white">{completedOrder.customer.name} ({completedOrder.customer.phone})</span>
+                <span className="font-extrabold text-gray-900">{completedOrder.customer.name} ({completedOrder.customer.phone})</span>
               </div>
               <div>
                 <span className="text-gray-400 font-bold block text-[10px] uppercase">Fulfillment</span>
-                <span className="font-extrabold text-gray-900 dark:text-white">{completedOrder.customer.address}</span>
+                <span className="font-extrabold text-gray-900">{completedOrder.customer.address}</span>
               </div>
             </div>
           </div>
@@ -407,7 +407,7 @@ export default function CartPage({
 
             <button 
               onClick={onContinueShopping}
-              className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
             >
               Back to Store
             </button>
@@ -424,15 +424,15 @@ export default function CartPage({
             {/* STEP 1: BASKET ITEMS */}
             {step === 'basket' && (
               <div className="space-y-4">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
-                  <div className="flex justify-between items-center border-b border-gray-150 dark:border-gray-800 pb-3">
-                    <h2 className="font-black text-base text-gray-900 dark:text-white flex items-center gap-2">
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-4">
+                  <div className="flex justify-between items-center border-b border-gray-150 pb-3">
+                    <h2 className="font-black text-base text-gray-900 flex items-center gap-2">
                       <ShoppingCart className="w-5 h-5 text-plum" />
                       <span>Shopping Basket Items ({cart.length})</span>
                     </h2>
                     
                     {/* Free Delivery Bar Indicator */}
-                    <div className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                    <div className="text-xs font-bold text-gray-600">
                       {isFreeDelivery ? (
                         <span className="text-green font-extrabold flex items-center gap-1">
                           <Check className="w-4 h-4" /> FREE Delivery Qualified!
@@ -445,18 +445,18 @@ export default function CartPage({
                     </div>
                   </div>
 
-                  <div className="divide-y divide-gray-150 dark:divide-gray-800">
+                  <div className="divide-y divide-gray-150">
                     {cart.map((item) => (
                       <div key={item.id} className="py-3 sm:py-4 flex flex-row items-center justify-between gap-2 sm:gap-4">
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           <img 
                             src={item.image} 
                             alt={item.name} 
-                            className="w-12 h-12 sm:w-16 sm:h-20 object-cover rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white shrink-0"
+                            className="w-12 h-12 sm:w-16 sm:h-20 object-cover rounded-xl sm:rounded-2xl border border-gray-200 bg-white shrink-0"
                           />
                           <div className="min-w-0 flex-1">
-                            <h3 className="font-extrabold text-[11px] sm:text-sm text-gray-900 dark:text-white truncate">{item.name}</h3>
-                            <p className="text-[10px] sm:text-xs font-black text-plum dark:text-pink-400 mt-0.5">
+                            <h3 className="font-extrabold text-[11px] sm:text-sm text-gray-900 truncate">{item.name}</h3>
+                            <p className="text-[10px] sm:text-xs font-black text-plum mt-0.5">
                               {formatMoney(item.price)} <span className="text-[9px] text-gray-400 font-normal hidden xs:inline">/ unit</span>
                             </p>
                           </div>
@@ -464,23 +464,23 @@ export default function CartPage({
 
                         {/* Quantity controls & Price */}
                         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-                          <div className="flex items-center gap-1 sm:gap-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 px-1.5 sm:px-2.5 py-1">
+                          <div className="flex items-center gap-1 sm:gap-2 border border-gray-200 rounded-xl bg-gray-50 px-1.5 sm:px-2.5 py-1">
                             <button onClick={() => onQtyChange(item.id, -1)} className="text-gray-500 hover:text-plum font-bold cursor-pointer p-0.5">
                               <Minus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </button>
-                            <span className="text-[11px] sm:text-xs font-black text-gray-900 dark:text-white min-w-[16px] sm:min-w-[20px] text-center">{item.qty}</span>
+                            <span className="text-[11px] sm:text-xs font-black text-gray-900 min-w-[16px] sm:min-w-[20px] text-center">{item.qty}</span>
                             <button onClick={() => onQtyChange(item.id, 1)} className="text-gray-500 hover:text-plum font-bold cursor-pointer p-0.5">
                               <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
 
-                          <span className="text-[11px] sm:text-sm font-black text-gray-900 dark:text-white min-w-[50px] sm:min-w-[70px] text-right">
+                          <span className="text-[11px] sm:text-sm font-black text-gray-900 min-w-[50px] sm:min-w-[70px] text-right">
                             {formatMoney(item.price * item.qty)}
                           </span>
 
                           <button 
                             onClick={() => onRemoveItem(item.id)} 
-                            className="text-gray-400 hover:text-red-500 p-1 sm:p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
+                            className="text-gray-400 hover:text-red-500 p-1 sm:p-1.5 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"
                             title="Remove item from cart"
                           >
                             <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -492,8 +492,8 @@ export default function CartPage({
                 </div>
 
                 {/* Delivery Location Selector & Fulfillment Choice */}
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
-                  <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                <div className="bg-white border border-gray-200 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+                  <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-plum" />
                     <span>Select Fulfillment Method</span>
                   </h3>
@@ -502,13 +502,13 @@ export default function CartPage({
                     <button 
                       type="button"
                       onClick={() => setDeliveryType('express')}
-                      className={`p-2.5 sm:p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'express' ? 'border-plum bg-plum/5 ring-2 ring-plum/20' : 'border-gray-200 dark:border-gray-700'}`}
+                      className={`p-2.5 sm:p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'express' ? 'border-plum bg-plum/5 ring-2 ring-plum/20' : 'border-gray-200'}`}
                     >
-                      <div className="flex items-center gap-1.5 font-black text-[11px] sm:text-xs text-gray-900 dark:text-white">
+                      <div className="flex items-center gap-1.5 font-black text-[11px] sm:text-xs text-gray-900">
                         <Truck className="w-3.5 h-3.5 text-plum shrink-0" />
                         <span className="truncate">Doorstep Express</span>
                       </div>
-                      <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                      <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 line-clamp-2">
                         Under 90 mins rider delivery in {deliveryLocation}.
                       </p>
                     </button>
@@ -516,13 +516,13 @@ export default function CartPage({
                     <button 
                       type="button"
                       onClick={() => setDeliveryType('pickup')}
-                      className={`p-2.5 sm:p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'pickup' ? 'border-green bg-green/5 ring-2 ring-green/20' : 'border-gray-200 dark:border-gray-700'}`}
+                      className={`p-2.5 sm:p-4 rounded-2xl border text-left cursor-pointer transition-all ${deliveryType === 'pickup' ? 'border-green bg-green/5 ring-2 ring-green/20' : 'border-gray-200'}`}
                     >
-                      <div className="flex items-center gap-1.5 font-black text-[11px] sm:text-xs text-gray-900 dark:text-white">
+                      <div className="flex items-center gap-1.5 font-black text-[11px] sm:text-xs text-gray-900">
                         <Building2 className="w-3.5 h-3.5 text-green shrink-0" />
                         <span className="truncate">Store Pick Up</span>
                       </div>
-                      <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                      <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 line-clamp-2">
                         Collect ready packed at any branch counter.
                       </p>
                     </button>
@@ -530,11 +530,11 @@ export default function CartPage({
 
                   {deliveryType === 'pickup' ? (
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Select Pickup Branch:</label>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">Select Pickup Branch:</label>
                       <select 
                         value={selectedBranch}
                         onChange={e => setSelectedBranch(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-bold text-gray-900 dark:text-white outline-none"
+                        className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-xs font-bold text-gray-900 outline-none"
                       >
                         {PICKUP_BRANCHES.map((b, i) => (
                           <option key={i} value={b}>{b}</option>
@@ -543,7 +543,7 @@ export default function CartPage({
                     </div>
                   ) : (
                     <div>
-                      <label className="block text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">Target County (47 Counties in Kenya):</label>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">Target County (47 Counties in Kenya):</label>
                       <select 
                         value={deliveryLocation}
                         onChange={e => {
@@ -551,7 +551,7 @@ export default function CartPage({
                           if (onDeliveryLocationChange) onDeliveryLocationChange(newCty);
                           syncCustomerProfile({ county: newCty, city: newCty });
                         }}
-                        className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-bold text-gray-900 dark:text-white outline-none focus:border-plum"
+                        className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-xs font-bold text-gray-900 outline-none focus:border-plum"
                       >
                         {KENYA_COUNTIES.map(c => (
                           <option key={c.code} value={c.name}>{c.name} County ({c.code})</option>
@@ -562,12 +562,12 @@ export default function CartPage({
                 </div>
 
                 {!currentCustomer ? (
-                  <div className="bg-amber-50 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-800 rounded-2xl p-4 text-xs space-y-3 shadow-xs">
-                    <div className="flex items-center gap-2 font-extrabold text-amber-900 dark:text-amber-200 text-sm">
-                      <UserPlus className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 text-xs space-y-3 shadow-xs">
+                    <div className="flex items-center gap-2 font-extrabold text-amber-900 text-sm">
+                      <UserPlus className="w-5 h-5 text-amber-600 shrink-0" />
                       <span>Member Account Required to Place an Order</span>
                     </div>
-                    <p className="text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                    <p className="text-amber-800 font-medium leading-relaxed">
                       Please create an account or sign in with your address first. Your profile address automatically pairs you with your nearest K-Matt Supermarket branch (e.g. Kericho, Nakuru, Eldoret) and calculates accurate delivery distance.
                     </p>
                     <button 
@@ -595,14 +595,14 @@ export default function CartPage({
 
             {/* STEP 2: SHIPPING / CONTACT FORM */}
             {step === 'shipping' && (
-              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-150 dark:border-gray-800 pb-3">
-                  <h2 className="font-black text-base text-gray-900 dark:text-white flex items-center gap-2">
+              <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-150 pb-3">
+                  <h2 className="font-black text-base text-gray-900 flex items-center gap-2">
                     <User className="w-5 h-5 text-plum" />
                     <span>2. Customer Contact & Delivery Address</span>
                   </h2>
                   {currentCustomer && (
-                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       <span>Auto-synced with Member Account</span>
                     </span>
@@ -611,7 +611,7 @@ export default function CartPage({
 
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Full Name *</label>
+                    <label className="block text-gray-600 font-bold mb-1">Full Name *</label>
                     <div className="relative">
                       <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                       <input 
@@ -625,14 +625,14 @@ export default function CartPage({
                           syncCustomerProfile({ name: val });
                         }}
                         onBlur={() => syncCustomerProfile({ name })}
-                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-semibold outline-none focus:border-plum"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Phone Number (M-Pesa) *</label>
+                      <label className="block text-gray-600 font-bold mb-1">Phone Number (M-Pesa) *</label>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                         <input 
@@ -647,13 +647,13 @@ export default function CartPage({
                             syncCustomerProfile({ phone: val });
                           }}
                           onBlur={() => syncCustomerProfile({ phone })}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-semibold outline-none focus:border-plum"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Email Address (For E-Receipt)</label>
+                      <label className="block text-gray-600 font-bold mb-1">Email Address (For E-Receipt)</label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                         <input 
@@ -666,7 +666,7 @@ export default function CartPage({
                             syncCustomerProfile({ email: val });
                           }}
                           onBlur={() => syncCustomerProfile({ email })}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
+                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-semibold outline-none focus:border-plum"
                         />
                       </div>
                     </div>
@@ -675,7 +675,7 @@ export default function CartPage({
                   {deliveryType === 'express' ? (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Doorstep Address / House No / Landmark *</label>
+                        <label className="block text-gray-600 font-bold mb-1">Doorstep Address / House No / Landmark *</label>
                         <div className="relative">
                           <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
                           <input 
@@ -689,7 +689,7 @@ export default function CartPage({
                               syncCustomerProfile({ address: val });
                             }}
                             onBlur={() => syncCustomerProfile({ address })}
-                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-semibold outline-none focus:border-plum"
+                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-semibold outline-none focus:border-plum"
                           />
                         </div>
                       </div>
@@ -702,18 +702,18 @@ export default function CartPage({
                         const nearestKm = nearestRes.distanceKm;
 
                         return (
-                          <div className="bg-plum/5 dark:bg-plum/20 border border-plum/30 rounded-xl p-3 space-y-1.5 text-xs">
+                          <div className="bg-plum/5 border border-plum/30 rounded-xl p-3 space-y-1.5 text-xs">
                             <div className="flex flex-wrap items-center justify-between gap-1">
-                              <div className="flex items-center gap-1.5 font-black text-plum dark:text-pink-300">
+                              <div className="flex items-center gap-1.5 font-black text-plum">
                                 <Building2 className="w-4 h-4" />
                                 <span>Nearest Supermarket: {nearestB.name}</span>
                               </div>
-                              <span className="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-md font-extrabold text-[10px] flex items-center gap-1">
+                              <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-extrabold text-[10px] flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-emerald-600" />
                                 ~{nearestKm} km from address
                               </span>
                             </div>
-                            <p className="text-gray-600 dark:text-gray-300 text-[11px]">
+                            <p className="text-gray-600 text-[11px]">
                               Express rider dispatch assigned from <strong>{nearestB.town} ({nearestB.address})</strong>.
                             </p>
                           </div>
@@ -721,28 +721,28 @@ export default function CartPage({
                       })()}
                     </div>
                   ) : (
-                    <div className="bg-green-50 dark:bg-green-950/40 p-3 rounded-xl border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-xs font-semibold flex items-center gap-2">
+                    <div className="bg-green-50 p-3 rounded-xl border border-green-200 text-green-800 text-xs font-semibold flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-green" />
                       <span>Order will be prepared for pickup at <strong>{selectedBranch}</strong>.</span>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Special Rider Notes (Optional)</label>
+                    <label className="block text-gray-600 font-bold mb-1">Special Rider Notes (Optional)</label>
                     <textarea 
                       rows={2} 
                       placeholder="e.g., Leave package with gate security or call upon arrival" 
                       value={notes} 
                       onChange={e => setNotes(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium outline-none focus:border-plum"
+                      className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-medium outline-none focus:border-plum"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-150 dark:border-gray-800">
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 border-t border-gray-150">
                   <button 
                     onClick={() => setStep('basket')}
-                    className="w-full sm:w-auto bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
+                    className="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs px-6 py-3.5 rounded-xl transition-colors cursor-pointer"
                   >
                     Back to Basket
                   </button>
@@ -767,8 +767,8 @@ export default function CartPage({
               <div className="space-y-6">
                 
                 {/* Method selector tabs */}
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4">
-                  <h2 className="font-black text-base text-gray-900 dark:text-white flex items-center gap-2 border-b border-gray-150 dark:border-gray-800 pb-3">
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-4">
+                  <h2 className="font-black text-base text-gray-900 flex items-center gap-2 border-b border-gray-150 pb-3">
                     <Lock className="w-5 h-5 text-plum" />
                     <span>3. Choose Payment Method ({formatMoney(grandTotal)})</span>
                   </h2>
@@ -777,7 +777,7 @@ export default function CartPage({
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('M-PESA')}
-                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'M-PESA' ? 'border-green bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 ring-2 ring-green/20' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
+                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'M-PESA' ? 'border-green bg-green-50 text-green-700 ring-2 ring-green/20' : 'border-gray-200 text-gray-700'}`}
                     >
                       <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 text-green flex-shrink-0" />
                       <span className="truncate">M-PESA Express</span>
@@ -786,7 +786,7 @@ export default function CartPage({
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('Card')}
-                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'Card' ? 'border-plum bg-plum/10 text-plum ring-2 ring-plum/20' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
+                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'Card' ? 'border-plum bg-plum/10 text-plum ring-2 ring-plum/20' : 'border-gray-200 text-gray-700'}`}
                     >
                       <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-plum flex-shrink-0" />
                       <span className="truncate">Credit / Debit Card</span>
@@ -795,9 +795,9 @@ export default function CartPage({
                     <button 
                       type="button"
                       onClick={() => setPaymentMethod('Cash on Delivery')}
-                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-plum bg-plum/10 text-plum dark:text-pink-300 ring-2 ring-plum/20' : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300'}`}
+                      className={`p-2.5 sm:p-3 rounded-2xl border text-center font-extrabold text-xs cursor-pointer transition-all flex flex-row sm:flex-col items-center justify-center gap-2 sm:gap-1.5 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-plum bg-plum/10 text-plum ring-2 ring-plum/20' : 'border-gray-200 text-gray-700'}`}
                     >
-                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-plum dark:text-pink-400 flex-shrink-0" />
+                      <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-plum flex-shrink-0" />
                       <span className="truncate">Pay on Delivery</span>
                     </button>
                   </div>
@@ -805,13 +805,13 @@ export default function CartPage({
 
                 {/* OPTION A: M-PESA EXPRESS INTERACTIVE PANEL */}
                 {paymentMethod === 'M-PESA' && (
-                  <div className="bg-white dark:bg-gray-900 border border-green-200 dark:border-green-900 rounded-3xl p-6 shadow-md space-y-4">
+                  <div className="bg-white border border-green-200 rounded-3xl p-6 shadow-md space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-2xl bg-green text-white font-black text-sm flex items-center justify-center">
                         M
                       </div>
                       <div>
-                        <h3 className="font-extrabold text-sm text-gray-900 dark:text-white">Lipa na M-PESA STK Push Prompt</h3>
+                        <h3 className="font-extrabold text-sm text-gray-900">Lipa na M-PESA STK Push Prompt</h3>
                         <p className="text-xs text-gray-500">Instant Safaricom Daraja integration prompt directly to your phone.</p>
                       </div>
                     </div>
@@ -819,24 +819,24 @@ export default function CartPage({
                     {stkStatus === 'idle' && (
                       <div className="space-y-3 pt-2">
                         <div>
-                          <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">M-PESA Registered Phone Number:</label>
+                          <label className="block text-xs font-bold text-gray-700 mb-1">M-PESA Registered Phone Number:</label>
                           <input 
                             type="tel" 
                             value={stkPhone} 
                             onChange={e => setStkPhone(e.target.value)}
                             placeholder="0712345678"
-                            className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold text-sm outline-none focus:border-green"
+                            className="w-full p-3 rounded-xl border border-gray-250 bg-white text-gray-900 font-bold text-sm outline-none focus:border-green"
                           />
                         </div>
 
-                        <div className="bg-gray-50 dark:bg-gray-800/60 p-3 rounded-xl text-xs space-y-1 border border-gray-200 dark:border-gray-700">
+                        <div className="bg-gray-50 p-3 rounded-xl text-xs space-y-1 border border-gray-200">
                           <div className="flex justify-between font-bold">
                             <span className="text-gray-500">Till / Paybill Number:</span>
                             <span className="text-green font-extrabold">KIPCHIMATT 889210</span>
                           </div>
                           <div className="flex justify-between font-bold">
                             <span className="text-gray-500">Amount to Charge:</span>
-                            <span className="text-plum dark:text-pink-400 font-extrabold">{formatMoney(grandTotal)}</span>
+                            <span className="text-plum font-extrabold">{formatMoney(grandTotal)}</span>
                           </div>
                         </div>
 
@@ -853,7 +853,7 @@ export default function CartPage({
                     {stkStatus === 'sending' && (
                       <div className="p-6 text-center space-y-3">
                         <RefreshCw className="w-8 h-8 text-green animate-spin mx-auto" />
-                        <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">Connecting to Safaricom M-PESA...</h4>
+                        <h4 className="font-extrabold text-sm text-gray-900">Connecting to Safaricom M-PESA...</h4>
                         <p className="text-xs text-gray-500">Sending STK Push prompt to {stkPhone}. Please keep your phone unlocked.</p>
                       </div>
                     )}
@@ -891,7 +891,7 @@ export default function CartPage({
                     {stkStatus === 'processing' && (
                       <div className="p-6 text-center space-y-3">
                         <RefreshCw className="w-8 h-8 text-plum animate-spin mx-auto" />
-                        <h4 className="font-extrabold text-sm text-gray-900 dark:text-white">Verifying Transaction with Safaricom...</h4>
+                        <h4 className="font-extrabold text-sm text-gray-900">Verifying Transaction with Safaricom...</h4>
                         <p className="text-xs text-gray-500">Authenticating PIN and awaiting payment notification callback.</p>
                       </div>
                     )}
@@ -900,7 +900,7 @@ export default function CartPage({
 
                 {/* OPTION B: CARD PAYMENT WITH VISUAL CARD PREVIEW */}
                 {paymentMethod === 'Card' && (
-                  <form onSubmit={handleCardSubmit} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-md space-y-4">
+                  <form onSubmit={handleCardSubmit} className="bg-white border border-gray-200 rounded-3xl p-6 shadow-md space-y-4">
                     
                     {/* Visual Card Widget */}
                     <div className="bg-gradient-to-tr from-plum-dark via-plum to-pink-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 sm:space-y-4 relative overflow-hidden">
@@ -930,44 +930,44 @@ export default function CartPage({
 
                     <div className="space-y-3 text-xs">
                       <div>
-                        <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Card Number *</label>
+                        <label className="block text-gray-600 font-bold mb-1">Card Number *</label>
                         <input 
                           type="text" 
                           required 
                           placeholder="4111 2222 3333 4444" 
                           value={cardNumber} 
                           onChange={e => handleCardNumberChange(e.target.value)}
-                          className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold outline-none focus:border-plum"
+                          className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-bold outline-none focus:border-plum"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Cardholder Name *</label>
+                        <label className="block text-gray-600 font-bold mb-1">Cardholder Name *</label>
                         <input 
                           type="text" 
                           required 
                           placeholder="e.g. Jane Wambui" 
                           value={cardHolder} 
                           onChange={e => setCardHolder(e.target.value)}
-                          className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold outline-none focus:border-plum"
+                          className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-bold outline-none focus:border-plum"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">Expiry Date *</label>
+                          <label className="block text-gray-600 font-bold mb-1">Expiry Date *</label>
                           <input 
                             type="text" 
                             required 
                             placeholder="MM/YY" 
                             value={cardExpiry} 
                             onChange={e => handleExpiryChange(e.target.value)}
-                            className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold outline-none focus:border-plum text-center"
+                            className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-bold outline-none focus:border-plum text-center"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-gray-600 dark:text-gray-300 font-bold mb-1">CVC / CVV *</label>
+                          <label className="block text-gray-600 font-bold mb-1">CVC / CVV *</label>
                           <input 
                             type="password" 
                             required 
@@ -975,7 +975,7 @@ export default function CartPage({
                             placeholder="123" 
                             value={cardCvc} 
                             onChange={e => setCardCvc(e.target.value)}
-                            className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold outline-none focus:border-plum text-center"
+                            className="w-full p-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 font-bold outline-none focus:border-plum text-center"
                           />
                         </div>
                       </div>
@@ -988,7 +988,7 @@ export default function CartPage({
                           onChange={e => setSaveCard(e.target.checked)} 
                           className="rounded text-plum focus:ring-plum"
                         />
-                        <label htmlFor="saveCard" className="text-gray-600 dark:text-gray-300 font-semibold cursor-pointer">
+                        <label htmlFor="saveCard" className="text-gray-600 font-semibold cursor-pointer">
                           Save card securely for 1-click checkout in future
                         </label>
                       </div>
@@ -1006,10 +1006,10 @@ export default function CartPage({
 
                 {/* OPTION C: CASH ON DELIVERY */}
                 {paymentMethod === 'Cash on Delivery' && (
-                  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-md space-y-4">
-                    <div className="bg-plum/5 dark:bg-gray-800 p-4 rounded-2xl border border-plum/20 dark:border-gray-700 text-xs text-gray-800 dark:text-gray-200 space-y-1">
-                      <h4 className="font-extrabold flex items-center gap-1.5 text-plum dark:text-pink-300">
-                        <Building2 className="w-4 h-4 text-plum dark:text-pink-400" />
+                  <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-md space-y-4">
+                    <div className="bg-plum/5 p-4 rounded-2xl border border-plum/20 text-xs text-gray-800 space-y-1">
+                      <h4 className="font-extrabold flex items-center gap-1.5 text-plum">
+                        <Building2 className="w-4 h-4 text-plum" />
                         <span>Pay on Delivery / Collection</span>
                       </h4>
                       <p>
@@ -1028,7 +1028,7 @@ export default function CartPage({
 
                 <button 
                   onClick={() => setStep('shipping')}
-                  className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 font-bold text-xs px-6 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs px-6 py-2.5 rounded-xl transition-colors cursor-pointer"
                 >
                   Back to Delivery Info
                 </button>
@@ -1046,34 +1046,34 @@ export default function CartPage({
               initial={{ x: 18, opacity: 0.85 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-              className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-sm space-y-4 sticky top-24"
+              className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-4 sticky top-24"
             >
-              <h3 className="font-extrabold text-base text-gray-900 dark:text-white border-b border-gray-150 dark:border-gray-800 pb-3 flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-gray-900 border-b border-gray-150 pb-3 flex items-center justify-between">
                 <span>Order Summary</span>
-                <span className="text-[10px] bg-plum-fade dark:bg-plum/20 text-plum dark:text-pink-300 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] bg-plum-fade text-plum px-2 py-0.5 rounded-full font-bold">
                   Live Rate
                 </span>
               </h3>
 
               {/* Loyalty Points Redemption Box */}
-              <div className="bg-plum/5 dark:bg-gray-800/80 border border-plum/15 dark:border-gray-700/80 rounded-2xl p-3.5 space-y-2.5">
+              <div className="bg-plum/5 border border-plum/15 rounded-2xl p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-black text-gray-900 dark:text-white">
-                    <Sparkles className="w-4 h-4 text-plum dark:text-pink-400" />
+                  <div className="flex items-center gap-1.5 text-xs font-black text-gray-900">
+                    <Sparkles className="w-4 h-4 text-plum" />
                     <span>Loyalty Points (Optional)</span>
                   </div>
-                  <span className="text-[10px] font-extrabold bg-plum/10 dark:bg-pink-900/40 text-plum dark:text-pink-300 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-extrabold bg-plum/10 text-plum px-2 py-0.5 rounded-full">
                     1 Pt = KSh 1
                   </span>
                 </div>
 
                 {!currentCustomer ? (
-                  <div className="bg-plum/5 dark:bg-gray-800 border border-plum/20 dark:border-gray-700 rounded-2xl p-3.5 space-y-2.5 text-xs">
-                    <div className="flex items-center gap-2 text-plum dark:text-pink-300 font-extrabold">
-                      <Lock className="w-4 h-4 text-plum dark:text-pink-400 shrink-0" />
+                  <div className="bg-plum/5 border border-plum/20 rounded-2xl p-3.5 space-y-2.5 text-xs">
+                    <div className="flex items-center gap-2 text-plum font-extrabold">
+                      <Lock className="w-4 h-4 text-plum shrink-0" />
                       <span>Sign In Required to Redeem Points</span>
                     </div>
-                    <p className="text-[11px] text-gray-600 dark:text-gray-300 font-medium leading-snug">
+                    <p className="text-[11px] text-gray-600 font-medium leading-snug">
                       Loyalty points are linked to member accounts. Please sign in or create an account with phone OTP verification to redeem points.
                     </p>
                     <button
@@ -1087,22 +1087,22 @@ export default function CartPage({
                   </div>
                 ) : (
                   <>
-                    <div className="text-xs text-gray-700 dark:text-gray-300 flex items-center justify-between font-bold bg-white dark:bg-gray-900 p-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
+                    <div className="text-xs text-gray-700 flex items-center justify-between font-bold bg-white p-2.5 rounded-xl border border-gray-200">
                       <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-green" />
                         <span>Signed in as <strong>{currentCustomer.name}</strong></span>
                       </div>
-                      <span className="text-plum dark:text-pink-400 font-black">{availablePoints} Points (KSh {availablePoints})</span>
+                      <span className="text-plum font-black">{availablePoints} Points (KSh {availablePoints})</span>
                     </div>
 
                     {availablePoints > 0 ? (
                       <div className="space-y-2 pt-1">
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-tight">
+                        <p className="text-[11px] text-gray-500 font-medium leading-tight">
                           Using points is completely optional. Leave unchecked to save points for later orders.
                         </p>
 
                         <div className="flex items-center justify-between gap-2 pt-1">
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-800 dark:text-gray-200 select-none">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-800 select-none">
                             <input 
                               type="checkbox"
                               checked={redeemPointsEnabled}
@@ -1139,7 +1139,7 @@ export default function CartPage({
                                 const val = Math.max(0, Math.min(Number(e.target.value) || 0, Math.min(availablePoints, rawSubtotal)));
                                 setPointsToRedeem(val);
                               }}
-                              className="w-full px-3 py-1.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-black text-gray-900 dark:text-white outline-none focus:border-plum"
+                              className="w-full px-3 py-1.5 rounded-xl border border-gray-250 bg-white text-xs font-black text-gray-900 outline-none focus:border-plum"
                               placeholder="Points to redeem"
                             />
                             <span className="text-xs font-black text-green shrink-0">
@@ -1156,10 +1156,10 @@ export default function CartPage({
               </div>
 
               {/* Financial Lines */}
-              <div className="space-y-2.5 text-xs border-t border-gray-150 dark:border-gray-800 pt-3">
-                <div className="flex justify-between text-gray-600 dark:text-gray-400 font-medium">
+              <div className="space-y-2.5 text-xs border-t border-gray-150 pt-3">
+                <div className="flex justify-between text-gray-600 font-medium">
                   <span>Subtotal ({cart.reduce((s, i) => s + i.qty, 0)} items)</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{formatMoney(rawSubtotal)}</span>
+                  <span className="font-bold text-gray-900">{formatMoney(rawSubtotal)}</span>
                 </div>
 
                 {discountAmount > 0 && (
@@ -1169,7 +1169,7 @@ export default function CartPage({
                   </div>
                 )}
 
-                <div className="flex justify-between text-gray-600 dark:text-gray-400 font-medium">
+                <div className="flex justify-between text-gray-600 font-medium">
                   <span>Delivery ({deliveryType === 'pickup' ? 'Pick Up' : deliveryLocation})</span>
                   <span>
                     {deliveryFee === 0 ? <strong className="text-green font-extrabold">FREE</strong> : formatMoney(deliveryFee)}
@@ -1186,16 +1186,16 @@ export default function CartPage({
                   initial={{ scale: 0.96, opacity: 0.8 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.25 }}
-                  className="flex justify-between text-base font-black text-gray-900 dark:text-white pt-3 border-t border-gray-200 dark:border-gray-700 bg-plum/5 dark:bg-plum/10 p-2.5 rounded-xl border border-plum/10"
+                  className="flex justify-between text-base font-black text-gray-900 pt-3 border-t border-gray-200 bg-plum/5 p-2.5 rounded-xl border border-plum/10"
                 >
                   <span>Total Amount</span>
-                  <span className="text-plum dark:text-pink-400 font-black">{formatMoney(grandTotal)}</span>
+                  <span className="text-plum font-black">{formatMoney(grandTotal)}</span>
                 </motion.div>
               </div>
 
               {/* Loyalty points notification */}
-              <div className="bg-plum-fade dark:bg-gray-800 p-3 rounded-2xl text-[11px] font-bold text-plum dark:text-pink-300 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-plum dark:text-pink-400" />
+              <div className="bg-plum-fade p-3 rounded-2xl text-[11px] font-bold text-plum flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-plum" />
                 <span>Earn +{Math.floor(grandTotal / 100)} K-Matt Loyalty Points on this order!</span>
               </div>
 

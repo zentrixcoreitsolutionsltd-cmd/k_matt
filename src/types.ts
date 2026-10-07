@@ -88,6 +88,7 @@ export interface StoreSettings {
   adminEmailForNotifications?: string;
   lowStockEmailEnabled?: boolean;
   lowStockThreshold: number;
+  cardColorTheme?: 'category' | 'plum' | 'emerald' | 'amber' | 'sapphire' | 'midnight';
 }
 
 export interface CategoryMeta {

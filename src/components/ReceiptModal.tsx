@@ -157,7 +157,7 @@ export default function ReceiptModal({
       `}</style>
 
       {/* Container */}
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl max-w-xl w-full border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col my-auto relative print:shadow-none print:border-none print:max-w-none print:w-full print:rounded-none">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full border border-gray-200 overflow-hidden flex flex-col my-auto relative print:shadow-none print:border-none print:max-w-none print:w-full print:rounded-none">
         
         {/* Top Control Bar (Hidden when printing) */}
         <div className="bg-gray-900 text-white p-4 flex items-center justify-between border-b border-gray-800 print:hidden">
@@ -212,59 +212,59 @@ export default function ReceiptModal({
         </div>
 
         {/* Printable Thermal/Invoice Document Area */}
-        <div id="printable-receipt" className="p-6 sm:p-8 space-y-6 text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 print:text-black print:bg-white print:p-4">
+        <div id="printable-receipt" className="p-6 sm:p-8 space-y-6 text-gray-900 bg-white print:text-black print:bg-white print:p-4">
           
           {/* Header Branding */}
-          <div className="text-center border-b border-dashed border-gray-300 dark:border-gray-700 pb-5 space-y-1">
+          <div className="text-center border-b border-dashed border-gray-300 pb-5 space-y-1">
             <div className="inline-flex items-center justify-center gap-2 mb-1">
               <span className="bg-plum text-white font-black text-lg px-2.5 py-0.5 rounded-lg tracking-wider">K-MATT</span>
             </div>
-            <h1 className="text-base font-extrabold uppercase tracking-wide text-gray-900 dark:text-white print:text-black">
+            <h1 className="text-base font-extrabold uppercase tracking-wide text-gray-900 print:text-black">
               K-Matt Supermarkets Ltd
             </h1>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 print:text-gray-700 font-medium">
+            <p className="text-[11px] text-gray-500 print:text-gray-700 font-medium">
               Head Office: Koinange Street, Nairobi | Tel: {settings.storePhone}
             </p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 print:text-gray-700 font-medium">
+            <p className="text-[11px] text-gray-500 print:text-gray-700 font-medium">
               KRA PIN: <span className="font-bold">P051928374Z</span> | ETR S/N: <span className="font-bold">KRA-2026-99210</span>
             </p>
-            <div className="inline-block mt-2 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+            <div className="inline-block mt-2 bg-green-50 text-green-700 border border-green-200 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
               TAX INVOICE / OFFICIAL E-RECEIPT
             </div>
           </div>
 
           {/* Receipt Info Grid */}
-          <div className="grid grid-cols-2 gap-4 text-xs border-b border-gray-150 dark:border-gray-800 pb-4">
+          <div className="grid grid-cols-2 gap-4 text-xs border-b border-gray-150 pb-4">
             <div>
-              <span className="text-gray-400 dark:text-gray-500 font-bold block text-[10px] uppercase">Receipt Number</span>
-              <strong className="text-plum dark:text-pink-400 text-sm font-black tracking-tight">{receiptNo}</strong>
+              <span className="text-gray-400 font-bold block text-[10px] uppercase">Receipt Number</span>
+              <strong className="text-plum text-sm font-black tracking-tight">{receiptNo}</strong>
             </div>
 
             <div className="text-right">
-              <span className="text-gray-400 dark:text-gray-500 font-bold block text-[10px] uppercase">Transaction Date</span>
-              <span className="font-bold text-gray-800 dark:text-gray-200 text-[11px]">{orderDate}</span>
+              <span className="text-gray-400 font-bold block text-[10px] uppercase">Transaction Date</span>
+              <span className="font-bold text-gray-800 text-[11px]">{orderDate}</span>
             </div>
 
             <div>
-              <span className="text-gray-400 dark:text-gray-500 font-bold block text-[10px] uppercase">Customer Name</span>
-              <span className="font-bold text-gray-900 dark:text-white">{order.customer.name}</span>
+              <span className="text-gray-400 font-bold block text-[10px] uppercase">Customer Name</span>
+              <span className="font-bold text-gray-900">{order.customer.name}</span>
             </div>
 
             <div className="text-right">
-              <span className="text-gray-400 dark:text-gray-500 font-bold block text-[10px] uppercase">Phone / Contact</span>
-              <span className="font-bold text-gray-900 dark:text-white">{order.customer.phone}</span>
+              <span className="text-gray-400 font-bold block text-[10px] uppercase">Phone / Contact</span>
+              <span className="font-bold text-gray-900">{order.customer.phone}</span>
             </div>
 
             <div className="col-span-2">
-              <span className="text-gray-400 dark:text-gray-500 font-bold block text-[10px] uppercase">Delivery / Pickup Location</span>
-              <span className="font-bold text-gray-800 dark:text-gray-200">{order.customer.address}, {order.customer.county} ({order.deliveryType === 'pickup' ? `Pick up at ${order.pickupBranch || 'Main Branch'}` : 'Express Doorstep Delivery'})</span>
+              <span className="text-gray-400 font-bold block text-[10px] uppercase">Delivery / Pickup Location</span>
+              <span className="font-bold text-gray-800">{order.customer.address}, {order.customer.county} ({order.deliveryType === 'pickup' ? `Pick up at ${order.pickupBranch || 'Main Branch'}` : 'Express Doorstep Delivery'})</span>
             </div>
           </div>
 
           {/* Payment Method Banner */}
-          <div className="bg-gray-50 dark:bg-gray-800/60 p-3 sm:p-3.5 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+          <div className="bg-gray-50 p-3 sm:p-3.5 rounded-2xl border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div>
-              <span className="text-gray-500 dark:text-gray-400 font-medium block text-[10px] uppercase">Payment Status</span>
+              <span className="text-gray-500 font-medium block text-[10px] uppercase">Payment Status</span>
               <span className="font-black text-green flex items-center gap-1 text-xs">
                 <ShieldCheck className="w-4 h-4 text-green flex-shrink-0" />
                 <span>PAID IN FULL</span>
@@ -273,26 +273,26 @@ export default function ReceiptModal({
 
             {order.pointsRedeemed && order.pointsRedeemed > 0 ? (
               <div className="sm:text-center">
-                <span className="text-gray-500 dark:text-gray-400 font-medium block text-[10px] uppercase">Loyalty Reward</span>
-                <span className="font-black text-plum dark:text-pink-400 text-xs flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
+                <span className="text-gray-500 font-medium block text-[10px] uppercase">Loyalty Reward</span>
+                <span className="font-black text-plum text-xs flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-plum" />
                   <span>{order.pointsRedeemed} PTS Redeemed (-{formatMoney(order.discountAmount || 0)})</span>
                 </span>
               </div>
             ) : null}
 
             <div className="sm:text-right">
-              <span className="text-gray-500 dark:text-gray-400 font-medium block text-[10px] uppercase">Payment Channel & Ref</span>
-              <span className="font-extrabold text-gray-900 dark:text-white break-all">{order.payment} ({txnRef})</span>
+              <span className="text-gray-500 font-medium block text-[10px] uppercase">Payment Channel & Ref</span>
+              <span className="font-extrabold text-gray-900 break-all">{order.payment} ({txnRef})</span>
             </div>
           </div>
 
           {/* Itemized Table */}
           <div className="space-y-2">
-            <h4 className="font-extrabold text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400">Itemized Purchases</h4>
-            <div className="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+            <h4 className="font-extrabold text-xs uppercase tracking-wider text-gray-600">Itemized Purchases</h4>
+            <div className="border border-gray-200 rounded-2xl overflow-hidden">
               <table className="w-full text-left text-xs">
-                <thead className="bg-gray-100 dark:bg-gray-800/80 text-gray-600 dark:text-gray-400 font-extrabold uppercase text-[10px]">
+                <thead className="bg-gray-100 text-gray-600 font-extrabold uppercase text-[10px]">
                   <tr>
                     <th className="p-2.5">Item Description</th>
                     <th className="p-2.5 text-center">Qty</th>
@@ -300,13 +300,13 @@ export default function ReceiptModal({
                     <th className="p-2.5 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-150 dark:divide-gray-800 font-medium">
+                <tbody className="divide-y divide-gray-150 font-medium">
                   {order.items.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
-                      <td className="p-2.5 text-gray-900 dark:text-gray-100 font-bold">{item.name}</td>
-                      <td className="p-2.5 text-center text-gray-600 dark:text-gray-300 font-bold">{item.qty}</td>
-                      <td className="p-2.5 text-right text-gray-600 dark:text-gray-300">{formatMoney(item.price)}</td>
-                      <td className="p-2.5 text-right font-black text-gray-900 dark:text-white">{formatMoney(item.price * item.qty)}</td>
+                    <tr key={idx} className="hover:bg-gray-50/50">
+                      <td className="p-2.5 text-gray-900 font-bold">{item.name}</td>
+                      <td className="p-2.5 text-center text-gray-600 font-bold">{item.qty}</td>
+                      <td className="p-2.5 text-right text-gray-600">{formatMoney(item.price)}</td>
+                      <td className="p-2.5 text-right font-black text-gray-900">{formatMoney(item.price * item.qty)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -315,8 +315,8 @@ export default function ReceiptModal({
           </div>
 
           {/* Totals Breakdown */}
-          <div className="space-y-2 text-xs border-t border-gray-200 dark:border-gray-800 pt-3">
-            <div className="flex justify-between text-gray-600 dark:text-gray-400 font-semibold">
+          <div className="space-y-2 text-xs border-t border-gray-200 pt-3">
+            <div className="flex justify-between text-gray-600 font-semibold">
               <span>Subtotal</span>
               <span>{formatMoney(order.subtotal)}</span>
             </div>
@@ -328,54 +328,54 @@ export default function ReceiptModal({
               </div>
             ) : null}
 
-            <div className="flex justify-between text-gray-600 dark:text-gray-400 font-semibold">
+            <div className="flex justify-between text-gray-600 font-semibold">
               <span>Delivery Fee</span>
               <span>{order.deliveryFee === 0 ? <strong className="text-green">FREE</strong> : formatMoney(order.deliveryFee)}</span>
             </div>
 
-            <div className="flex justify-between text-gray-500 dark:text-gray-400 text-[11px] font-normal">
+            <div className="flex justify-between text-gray-500 text-[11px] font-normal">
               <span>Included VAT (16% Standard Rate)</span>
               <span>{formatMoney(vatAmount)}</span>
             </div>
 
-            <div className="flex justify-between text-base font-black text-gray-900 dark:text-white pt-2 border-t border-dashed border-gray-300 dark:border-gray-700">
+            <div className="flex justify-between text-base font-black text-gray-900 pt-2 border-t border-dashed border-gray-300">
               <span>Total Paid Amount</span>
-              <span className="text-plum dark:text-pink-400 font-black">{formatMoney(order.total)}</span>
+              <span className="text-plum font-black">{formatMoney(order.total)}</span>
             </div>
           </div>
 
           {/* Barcode & QR Code Counter Verification */}
-          <div className="pt-4 border-t border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-between gap-4">
+          <div className="pt-4 border-t border-dashed border-gray-300 flex items-center justify-between gap-4">
             <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 font-mono text-[9px]">
+              <div className="flex items-center gap-1.5 text-gray-400 font-mono text-[9px]">
                 <QrCode className="w-4 h-4 text-gray-500" />
                 <span>POS REGISTER AUTH CODE: {receiptNo}</span>
               </div>
               
               {/* Simulated CSS Barcode */}
-              <div className="h-10 bg-gray-900 dark:bg-gray-100 p-1.5 rounded flex items-center justify-between gap-1 overflow-hidden">
+              <div className="h-10 bg-gray-900 p-1.5 rounded flex items-center justify-between gap-1 overflow-hidden">
                 {Array.from({ length: 32 }).map((_, i) => (
                   <div 
                     key={i} 
-                    className={`h-full ${i % 3 === 0 ? 'w-1 bg-white dark:bg-black' : i % 2 === 0 ? 'w-1.5 bg-gray-400 dark:bg-gray-600' : 'w-0.5 bg-white dark:bg-black'}`}
+                    className={`h-full ${i % 3 === 0 ? 'w-1 bg-white' : i % 2 === 0 ? 'w-1.5 bg-gray-400' : 'w-0.5 bg-white'}`}
                   />
                 ))}
               </div>
               <p className="text-[9px] text-center font-mono text-gray-400 uppercase tracking-widest">{receiptNo}</p>
             </div>
 
-            <div className="text-right text-[10px] text-gray-500 dark:text-gray-400 space-y-0.5 min-w-[120px]">
-              <p className="font-bold text-gray-700 dark:text-gray-300">Terminal: POS-T04</p>
+            <div className="text-right text-[10px] text-gray-500 space-y-0.5 min-w-[120px]">
+              <p className="font-bold text-gray-700">Terminal: POS-T04</p>
               <p>Cashier: System Auto-ETR</p>
               {order.pointsRedeemed && order.pointsRedeemed > 0 ? (
-                <p className="text-amber-600 dark:text-amber-400 font-extrabold">Redeemed: -{order.pointsRedeemed} PTS</p>
+                <p className="text-amber-600 font-extrabold">Redeemed: -{order.pointsRedeemed} PTS</p>
               ) : null}
-              <p className="text-plum dark:text-pink-400 font-extrabold">Earned: +{Math.floor(order.total / 100)} PTS</p>
+              <p className="text-plum font-extrabold">Earned: +{Math.floor(order.total / 100)} PTS</p>
             </div>
           </div>
 
           {/* Footer Terms */}
-          <div className="text-center text-[10px] text-gray-400 dark:text-gray-500 pt-2 border-t border-gray-150 dark:border-gray-800">
+          <div className="text-center text-[10px] text-gray-400 pt-2 border-t border-gray-150">
             <p>Thank you for shopping at K-Matt Supermarkets!</p>
             <p>Goods in sound condition returnable within 7 days with this official receipt.</p>
           </div>
@@ -383,7 +383,7 @@ export default function ReceiptModal({
         </div>
 
         {/* Bottom Actions Footer (Hidden on print) */}
-        <div className="bg-gray-50 dark:bg-gray-800/80 p-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="bg-gray-50 p-4 border-t border-gray-200 flex flex-wrap items-center justify-between gap-3 print:hidden">
           <button 
             onClick={handleSendEmail}
             disabled={sendingEmail}
@@ -410,7 +410,7 @@ export default function ReceiptModal({
             </button>
             <button 
               onClick={onClose}
-              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition-colors"
             >
               Close
             </button>

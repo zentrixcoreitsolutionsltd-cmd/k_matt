@@ -74,7 +74,7 @@ export default function BranchSelectorModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white border border-gray-150 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="bg-plum text-white px-6 py-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -98,17 +98,17 @@ export default function BranchSelectorModal({
         </div>
 
         {/* Current Active Banner */}
-        <div className="bg-plum-fade dark:bg-gray-800/80 px-6 py-3 border-b border-plum/10 dark:border-gray-700/60 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="bg-plum-fade px-6 py-3 border-b border-plum/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5">
-            <MapPin className="w-4 h-4 text-plum dark:text-pink-400 shrink-0" />
-            <span className="text-xs text-gray-700 dark:text-gray-200">
-              Active Branch: <strong className="text-plum dark:text-pink-300 font-extrabold">{selectedBranch.name}</strong> ({selectedBranch.county} County)
+            <MapPin className="w-4 h-4 text-plum shrink-0" />
+            <span className="text-xs text-gray-700">
+              Active Branch: <strong className="text-plum font-extrabold">{selectedBranch.name}</strong> ({selectedBranch.county} County)
             </span>
           </div>
           <button
             onClick={handleAutoDetect}
             disabled={isDetecting}
-            className="text-xs font-black text-plum dark:text-pink-400 hover:underline flex items-center gap-1 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-xl border border-plum/20 dark:border-gray-700 shadow-2xs"
+            className="text-xs font-black text-plum hover:underline flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border border-plum/20 shadow-2xs"
           >
             <Navigation className={`w-3.5 h-3.5 ${isDetecting ? 'animate-spin' : ''}`} />
             <span>{isDetecting ? 'Detecting Location...' : 'Auto-Detect Nearest'}</span>
@@ -124,7 +124,7 @@ export default function BranchSelectorModal({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search branch name, town, or county (e.g. Kericho, Nakuru, Eldoret...)"
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-2xl text-xs font-semibold text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-plum/30"
+              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-plum/30"
             />
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function BranchSelectorModal({
         <div className="p-6 pt-2 overflow-y-auto space-y-3 flex-1">
           {filteredBranches.length === 0 ? (
             <div className="text-center py-8 text-gray-500 space-y-2">
-              <Building2 className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600" />
+              <Building2 className="w-8 h-8 mx-auto text-gray-300" />
               <p className="text-xs font-bold">No branches match "{searchTerm}"</p>
               <p className="text-[11px] text-gray-400">Try searching for Kericho, Nakuru, Eldoret, Kisumu, Bomet, or Nairobi.</p>
             </div>
@@ -146,31 +146,31 @@ export default function BranchSelectorModal({
                   onClick={() => handleSelect(branch)}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
                     isSelected
-                      ? 'bg-plum-fade/70 dark:bg-gray-800 border-plum dark:border-pink-500 shadow-xs'
-                      : 'bg-white dark:bg-gray-800/40 border-gray-200 dark:border-gray-700/80 hover:border-plum/40 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      ? 'bg-plum-fade/70 border-plum shadow-xs'
+                      : 'bg-white border-gray-200 hover:border-plum/40 hover:bg-gray-50'
                   }`}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-extrabold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <h3 className="font-extrabold text-sm text-gray-900 flex items-center gap-1.5">
                         {branch.name}
                       </h3>
                       {branch.isMain && (
-                        <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300/40">
+                        <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300/40">
                           Main HQ Branch
                         </span>
                       )}
-                      <span className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <span className="bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
                         {branch.county} County
                       </span>
                     </div>
 
-                    <p className="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                    <p className="text-xs text-gray-600 flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                       <span>{branch.address}</span>
                     </p>
 
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1">
                       <Phone className="w-3 h-3 text-gray-400 shrink-0" />
                       <span>{branch.phone}</span>
                     </p>
@@ -184,7 +184,7 @@ export default function BranchSelectorModal({
                     className={`shrink-0 px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
                       isSelected
                         ? 'bg-plum text-white shadow-xs'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-plum hover:text-white'
+                        : 'bg-gray-100 text-gray-800 hover:bg-plum hover:text-white'
                     }`}
                   >
                     {isSelected ? (
@@ -206,12 +206,12 @@ export default function BranchSelectorModal({
         </div>
 
         {/* Footer info */}
-        <div className="bg-gray-50 dark:bg-gray-950 px-6 py-3 border-t border-gray-150 dark:border-gray-800 text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+        <div className="bg-gray-50 px-6 py-3 border-t border-gray-150 text-[11px] text-gray-500 flex items-center justify-between">
           <span className="flex items-center gap-1 font-semibold">
             <ShieldCheck className="w-3.5 h-3.5 text-green" />
             <span>K-Matt Multi-Branch Sync Active</span>
           </span>
-          <span className="font-bold text-gray-700 dark:text-gray-300">6 Regional Branches Operating</span>
+          <span className="font-bold text-gray-700">6 Regional Branches Operating</span>
         </div>
       </div>
     </div>

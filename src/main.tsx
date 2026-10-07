@@ -53,10 +53,10 @@ class ErrorBoundary extends React.Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6 text-center">
-          <div className="max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-150 dark:border-gray-700">
-            <h2 className="text-xl font-bold text-plum dark:text-plum-fade mb-2">Notice</h2>
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-6">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-center">
+          <div className="max-w-md bg-white rounded-2xl shadow-xl p-8 border border-gray-150">
+            <h2 className="text-xl font-bold text-plum mb-2">Notice</h2>
+            <p className="text-xs text-gray-600 mb-6">
               A temporary display error occurred. Please refresh to restore the page.
             </p>
             <button

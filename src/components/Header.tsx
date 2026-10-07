@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Phone, MapPin, Truck, Lock, Menu, Search, User, Heart, ShoppingCart, 
-  X, LayoutGrid, LogOut, Store, ArrowRight, Mic, MicOff, Sun, Moon,
+  X, LayoutGrid, LogOut, Store, ArrowRight, Mic, MicOff,
   ChevronDown, HelpCircle, ShieldCheck, Tag, Sparkles, ChevronRight, Globe, Building2
 } from 'lucide-react';
 import { StoreSettings, CategoryMeta } from '../types';
@@ -25,8 +25,6 @@ interface HeaderProps {
   onDeliveryLocationChange: (county: string) => void;
   isLoggedIn: boolean;
   onLogout: () => void;
-  isDark: boolean;
-  onToggleTheme: () => void;
   onToggleUserProfile: () => void;
   selectedBranchId: string;
   onOpenBranchModal: () => void;
@@ -46,8 +44,6 @@ export default function Header({
   onDeliveryLocationChange,
   isLoggedIn,
   onLogout,
-  isDark,
-  onToggleTheme,
   onToggleUserProfile,
   selectedBranchId,
   onOpenBranchModal
@@ -235,15 +231,6 @@ export default function Header({
                 <ChevronDown className="w-2.5 h-2.5 text-gray-200" />
               </button>
 
-              {/* Theme Toggle (Mobile) */}
-              <button 
-                onClick={onToggleTheme}
-                className="p-1 rounded-full hover:bg-white/10 text-white cursor-pointer transition-all shrink-0"
-                title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-              >
-                {isDark ? <Sun className="w-3.5 h-3.5 text-white" /> : <Moon className="w-3.5 h-3.5 text-gray-300" />}
-              </button>
-
               {/* Wishlist Widget (Mobile) */}
               {currentView === 'shop' && (
                 <button 
@@ -419,15 +406,6 @@ export default function Header({
                 <span className="text-[11px] lg:text-xs text-white font-black leading-none">& Orders</span>
               </button>
             )}
-
-            {/* Theme Toggle Button */}
-            <button 
-              onClick={onToggleTheme}
-              className="p-1 lg:p-1.5 rounded-full hover:bg-white/10 text-white cursor-pointer transition-all shrink-0"
-              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {isDark ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-300" />}
-            </button>
 
             {/* Elegant Wishlist panel */}
             {currentView === 'shop' && (
@@ -659,7 +637,7 @@ export default function Header({
  
       {/* 3. QUICK HORIZONTAL CATEGORIES RAIL (Sits beautifully under the subheaders) */}
       {currentView === 'shop' && (
-        <nav className="bg-white dark:bg-gray-900 border-b border-gray-150 dark:border-gray-800 shadow-sm overflow-hidden select-none" id="quick-category-rail">
+        <nav className="bg-white border-b border-gray-150 shadow-sm overflow-hidden select-none" id="quick-category-rail">
           <div className="w-full max-w-full px-2 sm:px-4 lg:px-6 flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-none">
             {categoryMeta.map((cat) => (
               <button
@@ -667,8 +645,8 @@ export default function Header({
                 onClick={() => selectCategory(cat.key)}
                 className={`px-3.5 py-1.5 rounded-full font-extrabold text-xs whitespace-nowrap transition-all cursor-pointer border ${
                   searchCategory === cat.key 
-                    ? 'bg-plum text-white border-plum dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100' 
-                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 dark:bg-gray-850 dark:text-gray-300 dark:border-gray-800 dark:hover:bg-gray-800'
+                    ? 'bg-plum text-white border-plum' 
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 {cat.label}
@@ -690,7 +668,7 @@ export default function Header({
           />
           {/* Drawer Wrapper */}
           <nav 
-            className="fixed top-0 left-0 w-[365px] max-w-[85%] h-full bg-white dark:bg-gray-900 shadow-2xl z-55 flex flex-col animate-slide-in font-sans overflow-hidden"
+            className="fixed top-0 left-0 w-[365px] max-w-[85%] h-full bg-white shadow-2xl z-55 flex flex-col animate-slide-in font-sans overflow-hidden"
             id="mega-menu-sidebar"
           >
             {/* Drawer Header (Sign In profile banner) */}
@@ -732,24 +710,24 @@ export default function Header({
                 <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2.5">
                   Trending & Deals
                 </h4>
-                <div className="space-y-2 text-sm font-bold text-gray-750 dark:text-gray-250">
+                <div className="space-y-2 text-sm font-bold text-gray-750">
                   <button 
                     onClick={() => { selectCategory('all'); setMegaMenuOpen(false); }}
-                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
+                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum transition-colors"
                   >
                     <span>Today's Kikapu Chapchap Deals</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
                   </button>
                   <button 
                     onClick={() => { selectCategory('fresh food'); setMegaMenuOpen(false); }}
-                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
+                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum transition-colors"
                   >
                     <span>Fresh Local Farm Harvests</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
                   </button>
                   <button 
                     onClick={() => { selectCategory('liquor'); setMegaMenuOpen(false); }}
-                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
+                    className="w-full flex items-center justify-between text-left py-1.5 hover:text-plum transition-colors"
                   >
                     <span>Premium Liquor & Spirits</span>
                     <ArrowRight className="w-3.5 h-3.5 text-gray-300" />
@@ -757,19 +735,19 @@ export default function Header({
                 </div>
               </div>
 
-              <div className="h-px bg-gray-150 dark:bg-gray-800" />
+              <div className="h-px bg-gray-150" />
 
               {/* SECTION: Food & Groceries */}
               <div>
                 <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2.5">
                   Grocery, Food & Beverages
                 </h4>
-                <div className="space-y-1 text-sm font-bold text-gray-750 dark:text-gray-250">
+                <div className="space-y-1 text-sm font-bold text-gray-750">
                   {categoryMeta.filter(c => ['food cupboard', 'fresh food', 'beverages', 'liquor'].includes(c.key)).map(cat => (
                     <button
                       key={cat.key}
                       onClick={() => selectCategory(cat.key)}
-                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-pink-300 group transition-colors"
+                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum group transition-colors"
                     >
                       <span>{cat.label}</span>
                       <ChevronRight className="w-4 h-4 text-gray-350 group-hover:translate-x-0.5 transition-all" />
@@ -778,19 +756,19 @@ export default function Header({
                 </div>
               </div>
 
-              <div className="h-px bg-gray-150 dark:bg-gray-800" />
+              <div className="h-px bg-gray-150" />
 
               {/* SECTION: Lifestyle, Basics & Fitness */}
               <div>
                 <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2.5">
                   Lifestyle, Basics & Fitness
                 </h4>
-                <div className="space-y-1 text-sm font-bold text-gray-750 dark:text-gray-250">
+                <div className="space-y-1 text-sm font-bold text-gray-750">
                   {categoryMeta.filter(c => ['electronics', 'health', 'apparel', 'sports', 'books', 'beauty'].includes(c.key)).map(cat => (
                     <button
                       key={cat.key}
                       onClick={() => selectCategory(cat.key)}
-                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-pink-300 group transition-colors"
+                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum group transition-colors"
                     >
                       <span>{cat.label}</span>
                       <ChevronRight className="w-4 h-4 text-gray-350 group-hover:translate-x-0.5 transition-all" />
@@ -799,19 +777,19 @@ export default function Header({
                 </div>
               </div>
 
-              <div className="h-px bg-gray-150 dark:bg-gray-800" />
+              <div className="h-px bg-gray-150" />
 
               {/* SECTION: Household & Pet */}
               <div>
                 <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2.5">
                   Household & Hardware Essentials
                 </h4>
-                <div className="space-y-1 text-sm font-bold text-gray-750 dark:text-gray-250">
+                <div className="space-y-1 text-sm font-bold text-gray-750">
                   {categoryMeta.filter(c => ['cleaning', 'furniture', 'hardware', 'pet', 'baby & kids', 'stationery'].includes(c.key)).map(cat => (
                     <button
                       key={cat.key}
                       onClick={() => selectCategory(cat.key)}
-                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum dark:hover:text-pink-300 group transition-colors"
+                      className="w-full flex items-center justify-between text-left py-2 hover:text-plum group transition-colors"
                     >
                       <span>{cat.label}</span>
                       <ChevronRight className="w-4 h-4 text-gray-350 group-hover:translate-x-0.5 transition-all" />
@@ -820,31 +798,25 @@ export default function Header({
                 </div>
               </div>
 
-              <div className="h-px bg-gray-150 dark:bg-gray-800" />
+              <div className="h-px bg-gray-150" />
 
               {/* SECTION: Help & Settings */}
               <div>
                 <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2.5">
                   Help & Settings
                 </h4>
-                <div className="space-y-2 text-sm font-bold text-gray-750 dark:text-gray-250">
+                <div className="space-y-2 text-sm font-bold text-gray-750">
                   <button 
                     onClick={() => { onToggleUserProfile(); setMegaMenuOpen(false); }}
-                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
+                    className="w-full text-left py-1.5 hover:text-plum transition-colors"
                   >
                     Your Profile & Settings
                   </button>
                   <button 
                     onClick={() => { onToggleUserProfile(); setMegaMenuOpen(false); }}
-                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
+                    className="w-full text-left py-1.5 hover:text-plum transition-colors"
                   >
                     Order History & Invoices
-                  </button>
-                  <button 
-                    onClick={() => { onToggleTheme(); setMegaMenuOpen(false); }}
-                    className="w-full text-left py-1.5 hover:text-plum dark:hover:text-pink-300 transition-colors"
-                  >
-                    {isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                   </button>
                   {isLoggedIn ? (
                     <button 
@@ -867,7 +839,7 @@ export default function Header({
             </div>
 
             {/* Footer legalities */}
-            <div className="bg-gray-50 dark:bg-gray-950 p-4 border-t border-gray-150 dark:border-gray-800 text-center text-[10px] text-gray-400 font-bold uppercase tracking-wider shrink-0 select-none">
+            <div className="bg-gray-50 p-4 border-t border-gray-150 text-center text-[10px] text-gray-400 font-bold uppercase tracking-wider shrink-0 select-none">
               K-Matt E-Commerce Platform v2.2
             </div>
           </nav>
@@ -882,7 +854,7 @@ export default function Header({
             className="fixed inset-0 bg-black/60 z-50 transition-opacity backdrop-blur-xs"
             aria-hidden="true"
           />
-          <nav className="fixed top-0 left-0 w-[320px] max-w-[88%] h-full bg-white dark:bg-gray-900 shadow-2xl z-55 flex flex-col font-sans">
+          <nav className="fixed top-0 left-0 w-[320px] max-w-[88%] h-full bg-white shadow-2xl z-55 flex flex-col font-sans">
             {/* Header */}
             <div className="bg-plum text-white p-4 sm:p-5 flex flex-col gap-3 relative border-b border-plum-dark shrink-0">
               <div className="flex items-center gap-3">
@@ -907,25 +879,25 @@ export default function Header({
             </div>
 
             {/* Mobile drawer scrollable body */}
-            <div className="flex-1 overflow-y-auto py-3 flex flex-col font-bold text-sm text-gray-700 dark:text-gray-300 space-y-1">
+            <div className="flex-1 overflow-y-auto py-3 flex flex-col font-bold text-sm text-gray-700 space-y-1">
               
               {/* Deliver To County Selection (Mobile) */}
-              <div className="mx-4 mb-2 p-3 bg-gray-50 dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700/80 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-xs font-black text-plum dark:text-pink-300">
+              <div className="mx-4 mb-2 p-3 bg-gray-50 rounded-xl border border-gray-200 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-xs font-black text-plum">
                   <span className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-plum dark:text-pink-400 shrink-0" />
+                    <MapPin className="w-4 h-4 text-plum shrink-0" />
                     <span>Delivery Location</span>
                   </span>
-                  <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded font-bold">47 Counties</span>
+                  <span className="text-[10px] text-green-600 bg-green-50 px-1.5 py-0.5 rounded font-bold">47 Counties</span>
                 </div>
                 <div className="relative w-full">
                   <select 
                     value={deliveryLocation}
                     onChange={(e) => onDeliveryLocationChange(e.target.value)}
-                    className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-black text-xs rounded-lg px-3 py-2 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
+                    className="w-full bg-white border border-gray-300 text-gray-900 font-black text-xs rounded-lg px-3 py-2 outline-none cursor-pointer appearance-none pr-8 shadow-2xs"
                   >
                     {KENYA_COUNTIES.map((c) => (
-                      <option key={c.code} value={c.name} className="text-gray-900 dark:text-white bg-white dark:bg-gray-900 font-bold">
+                      <option key={c.code} value={c.name} className="text-gray-900 bg-white font-bold">
                         {c.name}
                       </option>
                     ))}
@@ -938,24 +910,24 @@ export default function Header({
               <button 
                 type="button"
                 onClick={() => { setLangModalOpen(true); setMobileMenuOpen(false); }}
-                className="mx-4 mb-2 p-3 bg-gradient-to-r from-plum/10 via-plum/5 to-white/10 dark:from-gray-800/80 dark:to-gray-800 rounded-xl border border-plum/20 dark:border-gray-700 flex items-center justify-between text-left cursor-pointer hover:border-plum transition-all shadow-2xs group"
+                className="mx-4 mb-2 p-3 bg-gradient-to-r from-plum/10 via-plum/5 to-white/10 rounded-xl border border-plum/20 flex items-center justify-between text-left cursor-pointer hover:border-plum transition-all shadow-2xs group"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-plum dark:bg-pink-600 text-white flex items-center justify-center font-bold shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-plum text-white flex items-center justify-center font-bold shrink-0">
                     <Globe className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-plum dark:text-pink-300 group-hover:text-plum-dark">
+                    <p className="text-xs font-black text-plum group-hover:text-plum-dark">
                       Language & Currency
                     </p>
-                    <p className="text-[11px] font-bold text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                    <p className="text-[11px] font-bold text-gray-600 flex items-center gap-1">
                       <span>{languages.find(l => l.code === selectedLang)?.flag} {languages.find(l => l.code === selectedLang)?.label}</span>
                       <span>•</span>
-                      <span className="text-plum dark:text-white font-extrabold">{CURRENCIES[currentCurrency]?.code} ({CURRENCIES[currentCurrency]?.symbol})</span>
+                      <span className="text-plum font-extrabold">{CURRENCIES[currentCurrency]?.code} ({CURRENCIES[currentCurrency]?.symbol})</span>
                     </p>
                   </div>
                 </div>
-                <div className="px-2.5 py-1 rounded-lg bg-white dark:bg-gray-900 text-plum dark:text-white text-[10px] font-black border border-plum/20 shrink-0">
+                <div className="px-2.5 py-1 rounded-lg bg-white text-plum text-[10px] font-black border border-plum/20 shrink-0">
                   Change
                 </div>
               </button>
@@ -963,24 +935,24 @@ export default function Header({
               {/* Core Links */}
               <button 
                 onClick={() => { selectCategory('all'); onViewChange('shop'); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-800 cursor-pointer"
               >
-                <Store className="w-4.5 h-4.5 text-plum dark:text-pink-400 shrink-0" />
+                <Store className="w-4.5 h-4.5 text-plum shrink-0" />
                 <span>Store Home</span>
               </button>
 
               <button 
                 onClick={() => { setMegaMenuOpen(true); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between text-gray-800 dark:text-gray-100 cursor-pointer"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 flex items-center justify-between text-gray-800 cursor-pointer"
               >
                 <span className="flex items-center gap-3">
-                  <LayoutGrid className="w-4.5 h-4.5 text-plum dark:text-pink-400 shrink-0" />
+                  <LayoutGrid className="w-4.5 h-4.5 text-plum shrink-0" />
                   <span>Shop All Departments</span>
                 </span>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
               </button>
 
-              <div className="h-px bg-gray-150 dark:bg-gray-800 my-1 mx-5" />
+              <div className="h-px bg-gray-150 my-1 mx-5" />
 
               {/* Popular Category Shortcuts */}
               <div className="px-5 py-1">
@@ -988,28 +960,28 @@ export default function Header({
                 <div className="grid grid-cols-2 gap-1.5 mt-2">
                   <button
                     onClick={() => { selectCategory('fresh food'); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 hover:border-plum"
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 text-xs font-extrabold text-gray-800 border border-gray-200/80 hover:border-plum"
                   >
                     <span>🍏</span>
                     <span className="truncate">Fresh Produce</span>
                   </button>
                   <button
                     onClick={() => { selectCategory('liquor'); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-white dark:text-white border border-gray-200/80 dark:border-gray-700/80 hover:border-white"
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 text-xs font-extrabold text-white border border-gray-200/80 hover:border-white"
                   >
                     <span>🍷</span>
                     <span className="truncate">Liquor Cellar</span>
                   </button>
                   <button
                     onClick={() => { selectCategory('food cupboard'); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 hover:border-plum"
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 text-xs font-extrabold text-gray-800 border border-gray-200/80 hover:border-plum"
                   >
                     <span>🛒</span>
                     <span className="truncate">Food Cupboard</span>
                   </button>
                   <button
                     onClick={() => { selectCategory('electronics'); setMobileMenuOpen(false); }}
-                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 text-xs font-extrabold text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 hover:border-plum"
+                    className="flex items-center gap-1.5 p-2 rounded-lg bg-gray-50 text-xs font-extrabold text-gray-800 border border-gray-200/80 hover:border-plum"
                   >
                     <span>⚡</span>
                     <span className="truncate">Electricals</span>
@@ -1017,12 +989,12 @@ export default function Header({
                 </div>
               </div>
               
-              <div className="h-px bg-gray-150 dark:bg-gray-800 my-1 mx-5" />
+              <div className="h-px bg-gray-150 my-1 mx-5" />
               
               {/* User Account / Wishlist / Cart */}
               <button 
                 onClick={() => { onToggleWishlist(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between cursor-pointer"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer"
               >
                 <span className="flex items-center gap-3">
                   <Heart className="w-4.5 h-4.5 text-gray-500" />
@@ -1037,7 +1009,7 @@ export default function Header({
 
               <button 
                 onClick={() => { onToggleCart(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center justify-between cursor-pointer"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 flex items-center justify-between cursor-pointer"
               >
                 <span className="flex items-center gap-3">
                   <ShoppingCart className="w-4.5 h-4.5 text-gray-500" />
@@ -1052,39 +1024,31 @@ export default function Header({
 
               <button 
                 onClick={() => { onToggleUserProfile(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-800 cursor-pointer"
               >
                 <User className="w-4.5 h-4.5 text-gray-500" />
                 <span>Account Profile / Orders</span>
               </button>
 
-              <button 
-                onClick={() => { onToggleTheme(); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-100 cursor-pointer"
-              >
-                {isDark ? <Sun className="w-4.5 h-4.5 text-white" /> : <Moon className="w-4.5 h-4.5 text-gray-500" />}
-                <span>{isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}</span>
-              </button>
-
-              <div className="h-px bg-gray-150 dark:bg-gray-800 my-1 mx-5" />
+              <div className="h-px bg-gray-150 my-1 mx-5" />
 
               {/* Admin Portal */}
               <button 
                 onClick={() => { onViewChange('admin'); setMobileMenuOpen(false); }}
-                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-850 flex items-center gap-3 text-gray-800 dark:text-gray-200 cursor-pointer"
+                className="w-full text-left px-5 py-2.5 hover:bg-gray-50 flex items-center gap-3 text-gray-800 cursor-pointer"
               >
-                <Lock className="w-4.5 h-4.5 text-plum dark:text-pink-400" />
+                <Lock className="w-4.5 h-4.5 text-plum" />
                 <span>Admin Management Portal</span>
               </button>
 
               {/* Store Helpline / Contacts Footer */}
-              <div className="mx-4 mt-3 p-3 bg-plum/5 dark:bg-gray-800/60 rounded-xl border border-plum/10 dark:border-gray-700/60 text-xs">
-                <div className="flex items-center gap-1.5 font-black text-plum dark:text-white">
+              <div className="mx-4 mt-3 p-3 bg-plum/5 rounded-xl border border-plum/10 text-xs">
+                <div className="flex items-center gap-1.5 font-black text-plum">
                   <Phone className="w-3.5 h-3.5" />
                   <span>K-Matt Hotline</span>
                 </div>
-                <p className="text-[11px] text-gray-600 dark:text-gray-400 font-bold mt-0.5">{settings.storePhone}</p>
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-[10px] text-gray-500 dark:text-gray-400">
+                <p className="text-[11px] text-gray-600 font-bold mt-0.5">{settings.storePhone}</p>
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-200 text-[10px] text-gray-500">
                   <ShieldCheck className="w-3.5 h-3.5 text-green-600 shrink-0" />
                   <span>M-Pesa Express & Card Verified</span>
                 </div>

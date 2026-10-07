@@ -11,13 +11,13 @@ export default function AgeGateModal({ isOpen, onConfirm }: AgeGateModalProps) {
 
   return (
     <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl animate-scale-up">
+      <div className="bg-white border border-gray-150 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl animate-scale-up">
         <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
           <AlertTriangle className="w-8 h-8" />
         </div>
         <div>
-          <h3 className="font-black text-lg text-gray-900 dark:text-white">Age Verification Required</h3>
-          <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+          <h3 className="font-black text-lg text-gray-900">Age Verification Required</h3>
+          <p className="text-xs text-gray-600 mt-1">
             You are viewing alcoholic beverages in the Liquor Cellar category. You must be 18 years or older to purchase alcohol according to Kenyan Law.
           </p>
         </div>
@@ -25,7 +25,7 @@ export default function AgeGateModal({ isOpen, onConfirm }: AgeGateModalProps) {
         <div className="grid grid-cols-2 gap-3 pt-2">
           <button 
             onClick={() => onConfirm(false)}
-            className="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer"
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-3 rounded-xl transition-colors cursor-pointer"
           >
             I am under 18
           </button>

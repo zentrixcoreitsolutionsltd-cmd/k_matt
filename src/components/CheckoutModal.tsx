@@ -183,7 +183,7 @@ export default function CheckoutModal({
         />
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto relative border border-gray-200 dark:border-gray-800 animate-scale-up my-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[92vh] overflow-y-auto relative border border-gray-200 animate-scale-up my-auto">
         
         {/* Header */}
         <div className="bg-plum text-white p-5 flex items-center justify-between">
@@ -201,12 +201,12 @@ export default function CheckoutModal({
 
         {!currentCustomer ? (
           <div className="p-6 text-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto border border-amber-300 dark:border-amber-700 shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto border border-amber-300 shadow-sm">
               <UserPlus className="w-8 h-8" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-black text-gray-900 dark:text-white">Member Account Required to Order</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-300 max-w-sm mx-auto font-medium">
+              <h3 className="text-lg font-black text-gray-900">Member Account Required to Order</h3>
+              <p className="text-xs text-gray-600 max-w-sm mx-auto font-medium">
                 Please create an account or sign in with your address first. Your account address matches you to your nearest K-Matt Supermarket branch (e.g. Kericho, Nakuru, Eldoret) and calculates delivery distance.
               </p>
             </div>
@@ -229,15 +229,15 @@ export default function CheckoutModal({
             <div className="w-16 h-16 rounded-full bg-green-50 text-green flex items-center justify-center mx-auto border border-green-200">
               <CheckCircle className="w-10 h-10 text-green" />
             </div>
-            <h3 className="text-xl font-black text-gray-900 dark:text-white">Order Confirmed!</h3>
-            <p className="text-xs text-gray-600 dark:text-gray-300">
+            <h3 className="text-xl font-black text-gray-900">Order Confirmed!</h3>
+            <p className="text-xs text-gray-600">
               Receipt <strong className="text-plum font-bold">{placedOrder.receiptNo}</strong> generated.
             </p>
 
-            <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl text-left text-xs space-y-2 border border-gray-150 dark:border-gray-700">
+            <div className="bg-gray-50 p-4 rounded-2xl text-left text-xs space-y-2 border border-gray-150">
               <div className="flex justify-between font-bold">
                 <span className="text-gray-500">Total Paid:</span>
-                <span className="text-plum dark:text-pink-400 font-extrabold">{formatMoney(placedOrder.total)}</span>
+                <span className="text-plum font-extrabold">{formatMoney(placedOrder.total)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Payment Channel:</span>
@@ -268,7 +268,7 @@ export default function CheckoutModal({
 
               <button 
                 onClick={() => { setPlacedOrder(null); onClose(); }}
-                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-xs px-4 py-3 rounded-xl transition-colors cursor-pointer"
+                className="bg-gray-100 text-gray-700 font-bold text-xs px-4 py-3 rounded-xl transition-colors cursor-pointer"
               >
                 Close
               </button>
@@ -279,7 +279,7 @@ export default function CheckoutModal({
             
             {/* Customer Information */}
             <div className="space-y-3">
-              <h4 className="font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider text-[11px]">Recipient & Address</h4>
+              <h4 className="font-black text-gray-800 uppercase tracking-wider text-[11px]">Recipient & Address</h4>
               
               <div>
                 <label className="block text-gray-500 font-bold mb-1">Full Name *</label>
@@ -296,7 +296,7 @@ export default function CheckoutModal({
                       syncCustomerProfile({ name: val });
                     }}
                     onBlur={() => syncCustomerProfile({ name })}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white font-semibold outline-none focus:border-plum"
                   />
                 </div>
               </div>
@@ -317,7 +317,7 @@ export default function CheckoutModal({
                         syncCustomerProfile({ phone: val });
                       }}
                       onBlur={() => syncCustomerProfile({ phone })}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white font-semibold outline-none focus:border-plum"
                     />
                   </div>
                 </div>
@@ -336,7 +336,7 @@ export default function CheckoutModal({
                         syncCustomerProfile({ email: val });
                       }}
                       onBlur={() => syncCustomerProfile({ email })}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white font-semibold outline-none focus:border-plum"
                     />
                   </div>
                 </div>
@@ -352,7 +352,7 @@ export default function CheckoutModal({
                       setSelectedCounty(val);
                       syncCustomerProfile({ county: val, city: val });
                     }}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-bold text-gray-900 dark:text-white outline-none focus:border-plum"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white font-bold text-gray-900 outline-none focus:border-plum"
                   >
                     {KENYA_COUNTIES.map(c => (
                       <option key={c.code} value={c.name}>
@@ -377,7 +377,7 @@ export default function CheckoutModal({
                         syncCustomerProfile({ address: val });
                       }}
                       onBlur={() => syncCustomerProfile({ address })}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold outline-none focus:border-plum"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white font-semibold outline-none focus:border-plum"
                     />
                   </div>
                 </div>
@@ -390,7 +390,7 @@ export default function CheckoutModal({
                   <button 
                     type="button" 
                     onClick={() => setPaymentMethod('M-PESA')}
-                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'M-PESA' ? 'border-green bg-green-50 dark:bg-green-950/40 text-green' : 'border-gray-250 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
+                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'M-PESA' ? 'border-green bg-green-50 text-green' : 'border-gray-250 text-gray-600'}`}
                   >
                     <Smartphone className="w-4 h-4 text-green flex-shrink-0" />
                     <span className="text-[10px] sm:text-xs truncate w-full">M-PESA</span>
@@ -399,7 +399,7 @@ export default function CheckoutModal({
                   <button 
                     type="button" 
                     onClick={() => setPaymentMethod('Card')}
-                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'Card' ? 'border-plum bg-plum/10 text-plum' : 'border-gray-250 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
+                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'Card' ? 'border-plum bg-plum/10 text-plum' : 'border-gray-250 text-gray-600'}`}
                   >
                     <CreditCard className="w-4 h-4 text-plum flex-shrink-0" />
                     <span className="text-[10px] sm:text-xs truncate w-full">Card</span>
@@ -408,9 +408,9 @@ export default function CheckoutModal({
                   <button 
                     type="button" 
                     onClick={() => setPaymentMethod('Cash on Delivery')}
-                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-plum bg-plum/10 text-plum dark:text-pink-300' : 'border-gray-250 dark:border-gray-700 text-gray-600 dark:text-gray-300'}`}
+                    className={`py-2 px-1 sm:px-2 rounded-xl border font-extrabold text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-1 min-w-0 ${paymentMethod === 'Cash on Delivery' ? 'border-plum bg-plum/10 text-plum' : 'border-gray-250 text-gray-600'}`}
                   >
-                    <Building2 className="w-4 h-4 text-plum dark:text-pink-400 flex-shrink-0" />
+                    <Building2 className="w-4 h-4 text-plum flex-shrink-0" />
                     <span className="text-[10px] sm:text-xs truncate w-full">Cash</span>
                   </button>
                 </div>
@@ -445,7 +445,7 @@ export default function CheckoutModal({
 
               {/* Card Inputs */}
               {paymentMethod === 'Card' && (
-                <div className="space-y-2 bg-gray-50 dark:bg-gray-800/60 p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="space-y-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
                   <div>
                     <input 
                       type="text" 
@@ -453,7 +453,7 @@ export default function CheckoutModal({
                       placeholder="Card Number (4111 2222...)" 
                       value={cardNumber} 
                       onChange={e => handleCardNumberChange(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono font-bold"
+                      className="w-full p-2 rounded-lg border border-gray-250 bg-white font-mono font-bold"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -463,7 +463,7 @@ export default function CheckoutModal({
                       placeholder="MM/YY" 
                       value={cardExpiry} 
                       onChange={e => handleExpiryChange(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-center font-bold"
+                      className="w-full p-2 rounded-lg border border-gray-250 bg-white font-mono text-center font-bold"
                     />
                     <input 
                       type="password" 
@@ -472,7 +472,7 @@ export default function CheckoutModal({
                       placeholder="CVV" 
                       value={cardCvc} 
                       onChange={e => setCardCvc(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 font-mono text-center font-bold"
+                      className="w-full p-2 rounded-lg border border-gray-250 bg-white font-mono text-center font-bold"
                     />
                   </div>
                 </div>
@@ -480,10 +480,10 @@ export default function CheckoutModal({
 
             </div>
 
-            <div className="pt-3 border-t border-gray-150 dark:border-gray-800 space-y-2">
+            <div className="pt-3 border-t border-gray-150 space-y-2">
               <div className="flex justify-between text-gray-600 font-bold">
                 <span>Order Total:</span>
-                <span className="text-plum dark:text-pink-400 font-black text-sm">{formatMoney(total)}</span>
+                <span className="text-plum font-black text-sm">{formatMoney(total)}</span>
               </div>
 
               {stkStatus === 'sending' || stkStatus === 'processing' ? (

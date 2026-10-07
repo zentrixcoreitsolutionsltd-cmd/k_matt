@@ -6,12 +6,14 @@ import {
   Laptop, Lock, LogOut, Package, ShoppingBag, Settings, AlertTriangle, 
   Plus, Edit, Trash2, Check, RefreshCw, Mail, Search, DollarSign,
   TrendingDown, Clock, Calendar, AlertCircle, ShieldAlert, Sparkles, TrendingUp, CheckCircle2, ArrowRight,
-  Eye, Sun, Moon, ShieldCheck, Activity, Users, UserPlus, Shield, Key, FileText, Download, Filter, Building, Briefcase, X,
-  Smartphone, Fingerprint, ChevronRight, Building2, ArrowLeftRight, Layers, BarChart3, CheckSquare, Square
+  Eye, ShieldCheck, Activity, Users, UserPlus, Shield, Key, FileText, Download, Filter, Building, Briefcase, X,
+  Smartphone, Fingerprint, ChevronRight, Building2, ArrowLeftRight, Layers, BarChart3, CheckSquare, Square, MapPin, Phone,
+  Palette
 } from 'lucide-react';
 import { Product, Order, StoreSettings, AdminUser, AuditLogEntry, AdminRole } from '../types';
 import { formatMoney, uid, defaultProducts } from '../data/catalog';
 import { BRANCHES, getProductStockForBranch } from '../data/branches';
+import { CARD_COLOR_THEMES, CardColorThemeId, getCategoryColorDef } from '../utils/productCardColors';
 
 interface AdminPortalProps {
   products: Product[];
@@ -37,8 +39,6 @@ interface AdminPortalProps {
   adminAlerts: any[];
   onTriggerLowStockEmail: (productName: string, stock: number) => void;
   onSwitchToStorefront?: () => void;
-  isDark?: boolean;
-  onToggleTheme?: () => void;
 }
 
 export default function AdminPortal({
@@ -64,9 +64,7 @@ export default function AdminPortal({
   onShowToast,
   adminAlerts,
   onTriggerLowStockEmail,
-  onSwitchToStorefront,
-  isDark,
-  onToggleTheme
+  onSwitchToStorefront
 }: AdminPortalProps) {
   // Login Form States
   const [loginEmail, setLoginEmail] = useState('zentrixcoreitsolutionsltd@gmail.com');
@@ -119,6 +117,7 @@ export default function AdminPortal({
   const [storeEmail, setStoreEmail] = useState(settings.storeEmail);
   const [deliveryFee, setDeliveryFee] = useState(settings.deliveryFee);
   const [freeThreshold, setFreeThreshold] = useState(settings.freeDeliveryThreshold);
+  const [cardColorTheme, setCardColorTheme] = useState<CardColorThemeId>(settings.cardColorTheme || 'plum');
 
   // Audit Logs Filter State
   const [logCategoryFilter, setLogCategoryFilter] = useState<'all' | 'products' | 'orders' | 'inventory' | 'settings' | 'admins' | 'auth'>('all');
@@ -141,6 +140,107 @@ export default function AdminPortal({
   const [transferFromBranch, setTransferFromBranch] = useState<string>('kericho');
   const [transferToBranch, setTransferToBranch] = useState<string>('nakuru');
   const [transferQty, setTransferQty] = useState<number>(5);
+
+  // Bulk Branch Restock State via /api/branches
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkBranchId, setBulkBranchId] = useState<string>('kericho');
+  const [bulkQtyInput, setBulkQtyInput] = useState<Record<number, number>>({});
+  const [isBulkSyncing, setIsBulkSyncing] = useState(false);
+
+  const handleExecuteBulkBranchRestock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isReadOnly) {
+      onShowToast('Auditor Mode: Read-only access', 'error');
+      return;
+    }
+
+    const inventoryPayload: Record<string, number> = {};
+    Object.keys(bulkQtyInput).forEach(pIdStr => {
+      const pId = Number(pIdStr);
+      const qty = bulkQtyInput[pId];
+      if (qty !== undefined && !isNaN(qty) && qty >= 0) {
+        inventoryPayload[pIdStr] = qty;
+      }
+    });
+
+    if (Object.keys(inventoryPayload).length === 0) {
+      onShowToast('Please specify restock quantities for at least one product.', 'error');
+      return;
+    }
+
+    setIsBulkSyncing(true);
+    try {
+      const res = await fetch('/api/branches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          branchId: bulkBranchId,
+          inventory: inventoryPayload
+        })
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.products)) {
+        onProductsChange(data.products);
+        const branchObj = BRANCHES.find(b => b.id === bulkBranchId);
+        onShowToast(`Bulk restocked ${Object.keys(inventoryPayload).length} products for ${branchObj?.name || bulkBranchId} via /api/branches sync!`, 'success');
+        if (onAddAuditLog) {
+          onAddAuditLog('inventory', 'BULK_BRANCH_RESTOCK', `Synced bulk stock updates for ${Object.keys(inventoryPayload).length} items at ${branchObj?.name || bulkBranchId}`, 0);
+        }
+        setBulkModalOpen(false);
+        setBulkQtyInput({});
+      } else {
+        // Fallback local state update if server response didn't include full products array
+        const updated = products.map(p => {
+          if (inventoryPayload[p.id] !== undefined) {
+            const bMap = p.branchStock ? { ...p.branchStock } : {};
+            BRANCHES.forEach(b => {
+              if (bMap[b.id] === undefined) bMap[b.id] = getProductStockForBranch(p, b.id);
+            });
+            bMap[bulkBranchId] = inventoryPayload[p.id];
+            const sumTotal = Object.values(bMap).reduce((s, val) => s + (Number(val) || 0), 0);
+            return {
+              ...p,
+              branchStock: bMap,
+              stock: sumTotal,
+              branchId: bulkBranchId
+            };
+          }
+          return p;
+        });
+        onProductsChange(updated);
+        const branchObj = BRANCHES.find(b => b.id === bulkBranchId);
+        onShowToast(`Updated ${Object.keys(inventoryPayload).length} product stock levels for ${branchObj?.name || bulkBranchId}`, 'success');
+        setBulkModalOpen(false);
+        setBulkQtyInput({});
+      }
+    } catch (err) {
+      console.error('Failed to sync via /api/branches:', err);
+      // Local fallback
+      const updated = products.map(p => {
+        if (inventoryPayload[p.id] !== undefined) {
+          const bMap = p.branchStock ? { ...p.branchStock } : {};
+          BRANCHES.forEach(b => {
+            if (bMap[b.id] === undefined) bMap[b.id] = getProductStockForBranch(p, b.id);
+          });
+          bMap[bulkBranchId] = inventoryPayload[p.id];
+          const sumTotal = Object.values(bMap).reduce((s, val) => s + (Number(val) || 0), 0);
+          return {
+            ...p,
+            branchStock: bMap,
+            stock: sumTotal,
+            branchId: bulkBranchId
+          };
+        }
+        return p;
+      });
+      onProductsChange(updated);
+      onShowToast(`Updated branch stock levels locally.`, 'success');
+      setBulkModalOpen(false);
+      setBulkQtyInput({});
+    } finally {
+      setIsBulkSyncing(false);
+    }
+  };
 
   const handleUpdateBranchStock = (productId: number, branchId: string, newQty: number) => {
     if (isReadOnly) {
@@ -503,13 +603,14 @@ export default function AdminPortal({
       storePhone,
       storeEmail,
       deliveryFee,
-      freeDeliveryThreshold: freeThreshold
+      freeDeliveryThreshold: freeThreshold,
+      cardColorTheme
     });
     if (onAddAuditLog) {
       onAddAuditLog(
         'settings',
         'UPDATE_SETTINGS',
-        `Updated store settings (Store Name: ${storeName}, Phone: ${storePhone}, Delivery Fee: KSh ${deliveryFee})`
+        `Updated store settings (Store Name: ${storeName}, Card Colors Theme: ${cardColorTheme}, Delivery Fee: KSh ${deliveryFee})`
       );
     }
     onShowToast('Store settings updated', 'success');
@@ -604,7 +705,7 @@ export default function AdminPortal({
   // Not Logged In View
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
+      <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col font-sans">
         {/* Standalone Admin Header */}
         <header className="bg-plum text-white border-b border-plum-dark px-4 sm:px-8 py-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
@@ -638,31 +739,31 @@ export default function AdminPortal({
         <div className="flex-1 flex items-center justify-center p-4">
           {requires2FA && pendingAdminUser ? (
             /* 2FA Challenge Card */
-            <div className="w-full max-w-lg bg-white dark:bg-gray-900 border border-plum/30 dark:border-plum/50 rounded-3xl p-8 shadow-2xl space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-full max-w-lg bg-white border border-plum/30 rounded-3xl p-8 shadow-2xl space-y-6 text-center animate-in fade-in zoom-in-95 duration-200">
               <div className="w-16 h-16 rounded-2xl bg-plum text-white border border-plum-dark flex items-center justify-center mx-auto shadow-lg relative">
                 <Smartphone className="w-8 h-8 text-white" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-gray-900">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white">
                   ✓
                 </span>
               </div>
 
               <div>
-                <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase px-3 py-1 rounded-full border border-emerald-500/20 mb-2">
+                <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 font-extrabold text-[10px] uppercase px-3 py-1 rounded-full border border-emerald-500/20 mb-2">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Two-Factor Authentication Enforced</span>
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">Verify Admin Identity</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Enter the 6-digit security code generated for <strong className="text-plum dark:text-pink-300">{pendingAdminUser.name}</strong> ({pendingAdminUser.role.replace('_', ' ').toUpperCase()}).
+                <h2 className="text-2xl font-black text-gray-900">Verify Admin Identity</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter the 6-digit security code generated for <strong className="text-plum">{pendingAdminUser.name}</strong> ({pendingAdminUser.role.replace('_', ' ').toUpperCase()}).
                 </p>
               </div>
 
               {/* 2FA Method Switcher */}
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 dark:bg-gray-950 rounded-xl text-[11px] font-extrabold border border-gray-200 dark:border-gray-800">
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 rounded-xl text-[11px] font-extrabold border border-gray-200">
                 <button
                   type="button"
                   onClick={() => setTwoFactorMethod('authenticator')}
-                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'authenticator' ? 'bg-white dark:bg-gray-800 text-plum dark:text-pink-300 shadow-xs border border-gray-200 dark:border-gray-700 font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'authenticator' ? 'bg-white text-plum shadow-xs border border-gray-200 font-black' : 'text-gray-500 hover:text-gray-900'}`}
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                   <span>Authenticator</span>
@@ -670,7 +771,7 @@ export default function AdminPortal({
                 <button
                   type="button"
                   onClick={() => setTwoFactorMethod('sms')}
-                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'sms' ? 'bg-white dark:bg-gray-800 text-plum dark:text-pink-300 shadow-xs border border-gray-200 dark:border-gray-700 font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'sms' ? 'bg-white text-plum shadow-xs border border-gray-200 font-black' : 'text-gray-500 hover:text-gray-900'}`}
                 >
                   <Key className="w-3.5 h-3.5" />
                   <span>SMS OTP</span>
@@ -678,7 +779,7 @@ export default function AdminPortal({
                 <button
                   type="button"
                   onClick={() => setTwoFactorMethod('email')}
-                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'email' ? 'bg-white dark:bg-gray-800 text-plum dark:text-pink-300 shadow-xs border border-gray-200 dark:border-gray-700 font-black' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer ${twoFactorMethod === 'email' ? 'bg-white text-plum shadow-xs border border-gray-200 font-black' : 'text-gray-500 hover:text-gray-900'}`}
                 >
                   <Mail className="w-3.5 h-3.5" />
                   <span>Email Code</span>
@@ -686,20 +787,20 @@ export default function AdminPortal({
               </div>
 
               {/* Quick Auto-fill Demo Box */}
-              <div className="bg-plum/5 dark:bg-pink-950/20 p-3.5 rounded-2xl border border-plum/20 dark:border-pink-500/20 text-left space-y-2">
-                <div className="flex items-center justify-between text-xs font-bold text-plum dark:text-pink-300">
+              <div className="bg-plum/5 p-3.5 rounded-2xl border border-plum/20 text-left space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-plum">
                   <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-plum dark:text-pink-300 fill-plum" />
+                    <Sparkles className="w-4 h-4 text-plum fill-plum" />
                     <span>Demo 2FA Security Code:</span>
                   </span>
-                  <strong className="tracking-widest text-sm bg-white dark:bg-gray-900 px-2 py-0.5 rounded-md border border-plum/30 font-black">
+                  <strong className="tracking-widest text-sm bg-white px-2 py-0.5 rounded-md border border-plum/30 font-black">
                     {expected2FACode}
                   </strong>
                 </div>
                 <button
                   type="button"
                   onClick={() => setTwoFactorCode(expected2FACode)}
-                  className="w-full bg-white dark:bg-gray-900 hover:bg-plum hover:text-white text-plum dark:text-pink-300 border border-plum/30 text-[11px] font-black py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-98 flex items-center justify-center gap-1.5"
+                  className="w-full bg-white hover:bg-plum hover:text-white text-plum border border-plum/30 text-[11px] font-black py-1.5 rounded-xl transition-all cursor-pointer shadow-2xs active:scale-98 flex items-center justify-center gap-1.5"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Click to Auto-fill Code ({expected2FACode})</span>
@@ -708,7 +809,7 @@ export default function AdminPortal({
 
               <form onSubmit={handleVerify2FASubmit} className="space-y-4 text-left">
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
                     6-Digit Verification Code
                   </label>
                   <div className="relative">
@@ -719,14 +820,14 @@ export default function AdminPortal({
                       placeholder="000000"
                       value={twoFactorCode}
                       onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
-                      className="w-full text-center tracking-[0.5em] px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-black text-xl outline-none focus:border-plum"
+                      className="w-full text-center tracking-[0.5em] px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 font-black text-xl outline-none focus:border-plum"
                     />
                     <Key className="w-5 h-5 text-gray-400 absolute right-3.5 top-3.5" />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
-                  <label className="flex items-center gap-2 cursor-pointer text-gray-600 dark:text-gray-400 text-[11px]">
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-600 text-[11px]">
                     <input 
                       type="checkbox"
                       checked={remember2FADevice}
@@ -739,7 +840,7 @@ export default function AdminPortal({
                   <button
                     type="button"
                     onClick={handleResend2FACode}
-                    className="text-[11px] text-plum dark:text-pink-300 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                    className="text-[11px] text-plum font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <RefreshCw className="w-3 h-3" />
                     <span>Resend Code</span>
@@ -761,19 +862,19 @@ export default function AdminPortal({
                       setRequires2FA(false);
                       setPendingAdminUser(null);
                     }}
-                    className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <span>Back to Credentials Login</span>
                   </button>
                 </div>
               </form>
 
-              <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex justify-between text-xs text-gray-500">
+              <div className="pt-2 border-t border-gray-200 flex justify-between text-xs text-gray-500">
                 <span className="text-[11px]">Multi-Factor Audit Guard</span>
                 <button
                   type="button"
                   onClick={onSwitchToStorefront}
-                  className="text-[11px] text-plum dark:text-pink-400 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                  className="text-[11px] text-plum font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <span>Back to Storefront</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -782,20 +883,20 @@ export default function AdminPortal({
             </div>
           ) : (
             /* Primary Credentials Card */
-            <div className="w-full max-w-lg bg-white dark:bg-gray-900 border border-plum/20 dark:border-plum/40 rounded-3xl p-8 shadow-2xl space-y-6 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-plum/10 text-plum dark:text-pink-400 border border-plum/30 flex items-center justify-center mx-auto shadow-inner">
-                <ShieldCheck className="w-8 h-8 text-plum dark:text-pink-400" />
+            <div className="w-full max-w-lg bg-white border border-plum/20 rounded-3xl p-8 shadow-2xl space-y-6 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-plum/10 text-plum border border-plum/30 flex items-center justify-center mx-auto shadow-inner">
+                <ShieldCheck className="w-8 h-8 text-plum" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">Administrator Portal</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Select or enter your administrator email and security PIN.</p>
+                <h2 className="text-2xl font-black text-gray-900">Administrator Portal</h2>
+                <p className="text-xs text-gray-500 mt-1">Select or enter your administrator email and security PIN.</p>
               </div>
 
               {/* Quick Demo Admin Selector Chips */}
               {adminUsers.length > 0 && (
-                <div className="text-left bg-gray-50 dark:bg-gray-950 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
+                <div className="text-left bg-gray-50 p-3.5 rounded-2xl border border-gray-200 space-y-2">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-plum" />
                     <span>Configured Admin Profiles (Click to Auto-fill)</span>
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
@@ -807,9 +908,9 @@ export default function AdminPortal({
                           setLoginEmail(u.email);
                           setLoginPin(u.pin);
                         }}
-                        className={`text-left p-2 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${loginEmail === u.email ? 'bg-plum text-white font-bold border-plum' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'}`}
+                        className={`text-left p-2 rounded-xl border transition-all flex items-center gap-2 cursor-pointer ${loginEmail === u.email ? 'bg-plum text-white font-bold border-plum' : 'bg-white border-gray-200 hover:bg-gray-100 text-gray-800'}`}
                       >
-                        <div className="w-6 h-6 rounded-full bg-plum/10 text-plum dark:text-pink-400 font-black text-[10px] flex items-center justify-center shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-plum/10 text-plum font-black text-[10px] flex items-center justify-center shrink-0">
                           {u.name.charAt(0)}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -824,7 +925,7 @@ export default function AdminPortal({
 
               <form onSubmit={handleAdminLoginSubmit} className="space-y-4 text-xs text-left">
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
                     Administrator Email Address
                   </label>
                   <div className="relative">
@@ -834,14 +935,14 @@ export default function AdminPortal({
                       placeholder="e.g. zentrixcoreitsolutionsltd@gmail.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-bold text-sm outline-none focus:border-plum"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 font-bold text-sm outline-none focus:border-plum"
                     />
                     <Mail className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
                     Security PIN Code
                   </label>
                   <div className="relative">
@@ -851,7 +952,7 @@ export default function AdminPortal({
                       placeholder="Enter Security PIN (e.g. 1234)"
                       value={loginPin}
                       onChange={(e) => setLoginPin(e.target.value)}
-                      className="w-full tracking-widest px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-gray-900 dark:text-white font-bold text-base outline-none focus:border-plum"
+                      className="w-full tracking-widest px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 font-bold text-base outline-none focus:border-plum"
                     />
                     <Key className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
                   </div>
@@ -866,12 +967,12 @@ export default function AdminPortal({
                 </button>
               </form>
 
-              <div className="pt-2 border-t border-gray-200 dark:border-gray-800 flex justify-between text-xs text-gray-500">
+              <div className="pt-2 border-t border-gray-200 flex justify-between text-xs text-gray-500">
                 <span className="text-[11px]">2FA & Audit Logging Enabled</span>
                 <button
                   type="button"
                   onClick={onSwitchToStorefront}
-                  className="text-[11px] text-plum dark:text-pink-400 font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
+                  className="text-[11px] text-plum font-bold hover:underline transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <span>Back to Storefront</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -901,7 +1002,7 @@ export default function AdminPortal({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col font-sans">
       
       {/* 1. Standalone Admin Top Navigation Header */}
       <header className="bg-plum text-white border-b border-plum-dark sticky top-0 z-50 shadow-md">
@@ -985,18 +1086,6 @@ export default function AdminPortal({
               </button>
             )}
 
-            {/* Theme Toggle */}
-            {onToggleTheme && (
-              <button
-                type="button"
-                onClick={onToggleTheme}
-                className="p-2 bg-plum-dark hover:bg-plum-dark/80 text-white rounded-xl transition-colors cursor-pointer border border-white/10 shrink-0"
-                title="Toggle Dark / Light Theme"
-              >
-                {isDark ? <Sun className="w-4 h-4 text-white" /> : <Moon className="w-4 h-4 text-gray-300" />}
-              </button>
-            )}
-
             {/* Logout Button */}
             <button
               type="button"
@@ -1026,13 +1115,13 @@ export default function AdminPortal({
       <main className="flex-1 w-full max-w-full px-2 sm:px-4 lg:px-6 py-8 space-y-6">
         
         {/* Navigation Tabs Bar */}
-        <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-2 shadow-xs flex border-b border-gray-200 dark:border-gray-800 gap-1.5 text-xs font-extrabold overflow-x-auto">
+        <div className="bg-white border border-gray-150 rounded-2xl p-2 shadow-xs flex border-b border-gray-200 gap-1.5 text-xs font-extrabold overflow-x-auto">
           
           {/* Products Catalog Tab */}
           {(isSuperAdmin || isInventoryManager || isAuditor) && (
             <button 
               onClick={() => setActiveTab('products')}
-              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'products' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'products' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <Package className="w-4 h-4" />
               <span>Products Catalog</span>
@@ -1044,7 +1133,7 @@ export default function AdminPortal({
           {(isSuperAdmin || isOrderManager || isAuditor) && (
             <button 
               onClick={() => setActiveTab('orders')}
-              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'orders' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'orders' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <ShoppingBag className="w-4 h-4" />
               <span>Customer Orders</span>
@@ -1058,7 +1147,7 @@ export default function AdminPortal({
           {(isSuperAdmin || isInventoryManager || isAuditor) && (
             <button 
               onClick={() => setActiveTab('forecast')}
-              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'forecast' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'forecast' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <TrendingUp className="w-4 h-4" />
               <span>Stock Velocity & Forecast</span>
@@ -1069,7 +1158,7 @@ export default function AdminPortal({
           {(isSuperAdmin || isInventoryManager || isAuditor) && (
             <button 
               onClick={() => setActiveTab('branches')}
-              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'branches' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'branches' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <Building2 className="w-4 h-4 text-amber-300" />
               <span>Branches & Transfers</span>
@@ -1081,7 +1170,7 @@ export default function AdminPortal({
           {isSuperAdmin && (
             <button 
               onClick={() => setActiveTab('admins')}
-              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'admins' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'admins' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <Users className="w-4 h-4 text-white" />
               <span>Admin Management</span>
@@ -1093,7 +1182,7 @@ export default function AdminPortal({
           {isSuperAdmin && (
             <button 
               onClick={() => setActiveTab('settings')}
-              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'settings' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'settings' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
             >
               <Settings className="w-4 h-4" />
               <span>Store Configuration</span>
@@ -1103,7 +1192,7 @@ export default function AdminPortal({
           {/* Audit Logs Tab */}
           <button 
             onClick={() => setActiveTab('logs')}
-            className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'logs' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+            className={`py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all cursor-pointer shrink-0 ${activeTab === 'logs' ? 'bg-plum text-white font-black shadow-sm' : 'text-gray-600 hover:bg-gray-100'}`}
           >
             <FileText className="w-4 h-4 text-emerald-400" />
             <span>Audit & Change Logs</span>
@@ -1116,7 +1205,7 @@ export default function AdminPortal({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white">Store Inventory Catalog</h2>
+                <h2 className="text-xl font-black text-gray-900">Store Inventory Catalog</h2>
                 <p className="text-xs text-gray-500">Manage products, pricing, stock levels, and category organization.</p>
               </div>
 
@@ -1150,9 +1239,9 @@ export default function AdminPortal({
             {/* Add / Edit Product Modal */}
             {isAddingProduct && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 shadow-2xl">
-                  <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-800 pb-4">
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 shadow-2xl">
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-4">
+                    <h3 className="text-lg font-black text-gray-900">
                       {editingProduct && editingProduct.id ? 'Edit Product Item' : 'Add New Catalog Product'}
                     </h3>
                     <button 
@@ -1176,7 +1265,7 @@ export default function AdminPortal({
                           value={pName} 
                           onChange={(e) => setPName(e.target.value)}
                           placeholder="e.g. Premium Maize Flour 2kg"
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                         />
                       </div>
 
@@ -1187,7 +1276,7 @@ export default function AdminPortal({
                           value={pBrand} 
                           onChange={(e) => setPBrand(e.target.value)}
                           placeholder="e.g. K-Matt Select"
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                         />
                       </div>
 
@@ -1196,7 +1285,7 @@ export default function AdminPortal({
                         <select 
                           value={pCategory} 
                           onChange={(e) => setPCategory(e.target.value)}
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                         >
                           <option value="fresh produce">Fresh Produce</option>
                           <option value="dairy & eggs">Dairy & Eggs</option>
@@ -1216,7 +1305,7 @@ export default function AdminPortal({
                           required 
                           readOnly
                           value={Object.values(pBranchStock).reduce((acc, val) => acc + (Number(val) || 0), 0) || pStock} 
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 text-gray-900 dark:text-white font-black cursor-not-allowed"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-100 text-gray-900 font-black cursor-not-allowed"
                         />
                       </div>
 
@@ -1227,7 +1316,7 @@ export default function AdminPortal({
                           required 
                           value={pPrice} 
                           onChange={(e) => setPPrice(Number(e.target.value))}
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                         />
                       </div>
 
@@ -1237,26 +1326,26 @@ export default function AdminPortal({
                           type="number" 
                           value={pOriginalPrice} 
                           onChange={(e) => setPOriginalPrice(Number(e.target.value))}
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                         />
                       </div>
                     </div>
 
                     {/* Multi-Branch Stock Allocation Panel */}
-                    <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 space-y-3">
+                    <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-plum dark:text-pink-400" />
-                          <span className="font-extrabold text-gray-900 dark:text-white">Branch Stock Breakdown</span>
+                          <Building2 className="w-4 h-4 text-plum" />
+                          <span className="font-extrabold text-gray-900">Branch Stock Breakdown</span>
                         </div>
                         <span className="text-[10px] font-bold text-gray-500">
-                          Total: <strong className="text-plum dark:text-pink-400 font-black">{Object.values(pBranchStock).reduce((s, v) => s + (Number(v) || 0), 0)} units</strong>
+                          Total: <strong className="text-plum font-black">{Object.values(pBranchStock).reduce((s, v) => s + (Number(v) || 0), 0)} units</strong>
                         </span>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                         {BRANCHES.map(b => (
-                          <div key={b.id} className="p-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 flex flex-col gap-1">
-                            <div className="flex justify-between items-center text-[10px] font-bold text-gray-700 dark:text-gray-300">
+                          <div key={b.id} className="p-2.5 rounded-xl bg-white border border-gray-200 flex flex-col gap-1">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-gray-700">
                               <span className="truncate">{b.town}</span>
                               {b.isMain && <span className="bg-plum/10 text-plum text-[9px] px-1 rounded font-black">Main HQ</span>}
                             </div>
@@ -1271,7 +1360,7 @@ export default function AdminPortal({
                                 const sum = Object.values(newMap).reduce((s, v) => s + (Number(v) || 0), 0);
                                 setPStock(sum);
                               }}
-                              className="w-full p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-black text-center text-xs"
+                              className="w-full p-1.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 font-black text-center text-xs"
                             />
                           </div>
                         ))}
@@ -1285,7 +1374,7 @@ export default function AdminPortal({
                         value={pImage} 
                         onChange={(e) => setPImage(e.target.value)}
                         placeholder="https://images.unsplash.com/..."
-                        className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                       />
                     </div>
 
@@ -1296,18 +1385,18 @@ export default function AdminPortal({
                         value={pDesc} 
                         onChange={(e) => setPDesc(e.target.value)}
                         placeholder="Provide product details, weight, ingredients or pack size..."
-                        className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                       <button 
                         type="button"
                         onClick={() => {
                           setIsAddingProduct(false);
                           setEditingProduct(null);
                         }}
-                        className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        className="px-5 py-2.5 rounded-xl border border-gray-300 font-bold hover:bg-gray-100 cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -1324,10 +1413,10 @@ export default function AdminPortal({
             )}
 
             {/* Products Table */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-gray-150 rounded-3xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 font-extrabold border-b border-gray-200 dark:border-gray-800">
+                  <thead className="bg-gray-50 text-gray-500 font-extrabold border-b border-gray-200">
                     <tr>
                       <th className="py-3.5 px-4">Item Details</th>
                       <th className="py-3.5 px-4">Category</th>
@@ -1336,22 +1425,22 @@ export default function AdminPortal({
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                  <tbody className="divide-y divide-gray-100 font-medium">
                     {products.map(p => (
-                      <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                      <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
-                            <img src={p.image} alt={p.name} className="w-10 h-10 object-cover rounded-xl border border-gray-200 dark:border-gray-700" />
+                            <img src={p.image} alt={p.name} className="w-10 h-10 object-cover rounded-xl border border-gray-200" />
                             <div>
-                              <p className="font-extrabold text-gray-900 dark:text-white text-sm">{p.name}</p>
+                              <p className="font-extrabold text-gray-900 text-sm">{p.name}</p>
                               <p className="text-gray-500 text-[10px] uppercase font-bold">{p.brand}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-4 capitalize font-semibold text-gray-700 dark:text-gray-300">
+                        <td className="py-3 px-4 capitalize font-semibold text-gray-700">
                           {p.category}
                         </td>
-                        <td className="py-3 px-4 font-black text-gray-900 dark:text-white">
+                        <td className="py-3 px-4 font-black text-gray-900">
                           {formatMoney(p.price)}
                         </td>
                         <td className="py-3 px-4">
@@ -1378,7 +1467,7 @@ export default function AdminPortal({
                                   {!isReadOnly && !isOrderManager && (
                                     <button 
                                       onClick={() => handleRestockProduct(p.id, 20)}
-                                      className="bg-gray-100 dark:bg-gray-800 hover:bg-plum hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                                      className="bg-gray-100 hover:bg-plum hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
                                       title="Quick Restock +20 units"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
@@ -1398,7 +1487,7 @@ export default function AdminPortal({
                                         setTransferToBranch(adminSelectedBranch);
                                         setTransferModalOpen(true);
                                       }}
-                                      className="text-plum dark:text-pink-400 hover:underline flex items-center gap-0.5 cursor-pointer font-black"
+                                      className="text-plum hover:underline flex items-center gap-0.5 cursor-pointer font-black"
                                     >
                                       <ArrowLeftRight className="w-2.5 h-2.5" />
                                       Transfer Stock
@@ -1414,7 +1503,7 @@ export default function AdminPortal({
                             {!isReadOnly && !isOrderManager && (
                               <button 
                                 onClick={() => handleStartEdit(p)}
-                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg cursor-pointer"
+                                className="p-1.5 hover:bg-gray-100 text-gray-600 rounded-lg cursor-pointer"
                                 title="Edit Product"
                               >
                                 <Edit className="w-4 h-4" />
@@ -1423,7 +1512,7 @@ export default function AdminPortal({
                             {isSuperAdmin && (
                               <button 
                                 onClick={() => handleDeleteProduct(p.id)}
-                                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 rounded-lg cursor-pointer"
+                                className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer"
                                 title="Delete Product"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1444,23 +1533,23 @@ export default function AdminPortal({
         {activeTab === 'orders' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">Customer Orders Dispatch</h2>
+              <h2 className="text-xl font-black text-gray-900">Customer Orders Dispatch</h2>
               <p className="text-xs text-gray-500">Track incoming purchases, verify payment status, and process delivery fulfillment.</p>
             </div>
 
             {orders.length === 0 ? (
-              <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-12 text-center text-gray-500 space-y-3">
-                <ShoppingBag className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-700" />
+              <div className="bg-white border border-gray-150 rounded-3xl p-12 text-center text-gray-500 space-y-3">
+                <ShoppingBag className="w-12 h-12 mx-auto text-gray-300" />
                 <p className="font-bold text-sm">No customer orders placed yet.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {orders.map(order => (
-                  <div key={order.id} className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-6 shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4">
+                  <div key={order.id} className="bg-white border border-gray-150 rounded-3xl p-6 shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-gray-100 pb-4">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-base text-gray-900 dark:text-white">Order #{order.id.slice(-6).toUpperCase()}</span>
+                          <span className="font-black text-base text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</span>
                           <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${order.status === 'delivered' ? 'bg-green-500/20 text-green-400' : order.status === 'shipped' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-300'}`}>
                             {order.status}
                           </span>
@@ -1469,12 +1558,12 @@ export default function AdminPortal({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-lg text-plum dark:text-pink-400">{formatMoney(order.total)}</span>
+                        <span className="font-black text-lg text-plum">{formatMoney(order.total)}</span>
                         {!isReadOnly && (
                           <select 
                             value={order.status}
                             onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as Order['status'])}
-                            className="text-xs font-bold p-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none cursor-pointer"
+                            className="text-xs font-bold p-2 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none cursor-pointer"
                           >
                             <option value="pending">Pending</option>
                             <option value="processing">Processing</option>
@@ -1489,7 +1578,7 @@ export default function AdminPortal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                       <div>
                         <p className="font-extrabold text-gray-500 mb-1">Customer Information</p>
-                        <p className="font-bold text-gray-900 dark:text-white">{order.customer.name}</p>
+                        <p className="font-bold text-gray-900">{order.customer.name}</p>
                         <p className="text-gray-500">{order.customer.phone} • {order.customer.email}</p>
                         <p className="text-gray-500">{order.customer.address}, {order.customer.county}</p>
                       </div>
@@ -1498,7 +1587,7 @@ export default function AdminPortal({
                         <p className="font-extrabold text-gray-500 mb-1">Purchased Items ({order.items.reduce((a, b) => a + b.qty, 0)})</p>
                         <div className="space-y-1">
                           {order.items.map(i => (
-                            <div key={i.id} className="flex justify-between text-gray-700 dark:text-gray-300 font-medium">
+                            <div key={i.id} className="flex justify-between text-gray-700 font-medium">
                               <span>{i.qty}x {i.name}</span>
                               <span className="font-bold">{formatMoney(i.price * i.qty)}</span>
                             </div>
@@ -1518,7 +1607,7 @@ export default function AdminPortal({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white">Stock Velocity & Reorder Forecast</h2>
+                <h2 className="text-xl font-black text-gray-900">Stock Velocity & Reorder Forecast</h2>
                 <p className="text-xs text-gray-500">Predictive inventory replenishment based on 30-day sales velocity metrics.</p>
               </div>
 
@@ -1526,7 +1615,7 @@ export default function AdminPortal({
                 <select 
                   value={forecastFilter} 
                   onChange={(e) => setForecastFilter(e.target.value as any)}
-                  className="text-xs font-bold p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none cursor-pointer"
+                  className="text-xs font-bold p-2.5 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none cursor-pointer"
                 >
                   <option value="all">All Products</option>
                   <option value="critical">Critical (≤ 7 Days Stock)</option>
@@ -1537,39 +1626,39 @@ export default function AdminPortal({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 space-y-1">
+              <div className="bg-white border border-gray-150 rounded-2xl p-5 space-y-1">
                 <p className="text-xs text-gray-500 font-bold uppercase">At-Risk Items</p>
                 <p className="text-2xl font-black text-red-500">{atRiskProductsCount}</p>
                 <p className="text-[10px] text-gray-400">Stock lower than 10 units</p>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 space-y-1">
+              <div className="bg-white border border-gray-150 rounded-2xl p-5 space-y-1">
                 <p className="text-xs text-gray-500 font-bold uppercase">Critical Stockout Warning</p>
                 <p className="text-2xl font-black text-amber-500">{criticalStockProducts.length}</p>
                 <p className="text-[10px] text-gray-400">May run out within 7 days</p>
               </div>
 
-              <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-5 space-y-1">
+              <div className="bg-white border border-gray-150 rounded-2xl p-5 space-y-1">
                 <p className="text-xs text-gray-500 font-bold uppercase">Total Catalog Items</p>
-                <p className="text-2xl font-black text-plum dark:text-pink-400">{products.length}</p>
+                <p className="text-2xl font-black text-plum">{products.length}</p>
                 <p className="text-[10px] text-gray-400">Active active inventory SKUs</p>
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-150 dark:border-gray-800">
+            <div className="bg-white border border-gray-150 rounded-3xl shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-150">
                 <input 
                   type="text" 
                   placeholder="Search catalog by product name or category..." 
                   value={forecastSearch} 
                   onChange={(e) => setForecastSearch(e.target.value)}
-                  className="w-full text-xs p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                  className="w-full text-xs p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none"
                 />
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 font-extrabold border-b border-gray-200 dark:border-gray-800">
+                  <thead className="bg-gray-50 text-gray-500 font-extrabold border-b border-gray-200">
                     <tr>
                       <th className="py-3.5 px-4">Product Name</th>
                       <th className="py-3.5 px-4">Current Stock</th>
@@ -1579,10 +1668,10 @@ export default function AdminPortal({
                       <th className="py-3.5 px-4 text-right">Replenishment</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                  <tbody className="divide-y divide-gray-100 font-medium">
                     {forecastProducts.map(p => (
-                      <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                        <td className="py-3 px-4 font-bold text-gray-900 dark:text-white">
+                      <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="py-3 px-4 font-bold text-gray-900">
                           {p.name}
                         </td>
                         <td className="py-3 px-4 font-extrabold">
@@ -1591,15 +1680,15 @@ export default function AdminPortal({
                               0 units (Out of Stock)
                             </span>
                           ) : (
-                            <span className={p.stock <= 5 ? 'text-red-500' : 'text-gray-900 dark:text-white'}>
+                            <span className={p.stock <= 5 ? 'text-red-500' : 'text-gray-900'}>
                               {p.stock} units
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 font-bold text-gray-700 dark:text-gray-300">
+                        <td className="py-3 px-4 font-bold text-gray-700">
                           {p.sales30Days} units
                         </td>
-                        <td className="py-3 px-4 font-bold text-gray-700 dark:text-gray-300">
+                        <td className="py-3 px-4 font-bold text-gray-700">
                           {p.dailySalesRate} / day
                         </td>
                         <td className="py-3 px-4 font-extrabold">
@@ -1630,10 +1719,10 @@ export default function AdminPortal({
         {activeTab === 'branches' && (
           <div className="space-y-6">
             {/* Header & Quick Actions */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-150 dark:border-gray-800 shadow-xs">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-150 shadow-xs">
               <div>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
-                  <Building2 className="w-6 h-6 text-plum dark:text-pink-400" />
+                <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                  <Building2 className="w-6 h-6 text-plum" />
                   <span>All Supermarket Branches & Inter-Branch Logistics</span>
                 </h2>
                 <p className="text-xs text-gray-500 mt-1">
@@ -1642,18 +1731,109 @@ export default function AdminPortal({
               </div>
 
               {!isReadOnly && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (products.length > 0) setTransferProduct(products[0]);
-                    setTransferModalOpen(true);
-                  }}
-                  className="bg-plum hover:bg-plum-dark text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0"
-                >
-                  <ArrowLeftRight className="w-4 h-4 text-amber-300" />
-                  <span>Execute Inter-Branch Transfer</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const initial: Record<number, number> = {};
+                      products.forEach(p => {
+                        initial[p.id] = getProductStockForBranch(p, bulkBranchId);
+                      });
+                      setBulkQtyInput(initial);
+                      setBulkModalOpen(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                  >
+                    <RefreshCw className="w-4 h-4 text-emerald-200" />
+                    <span>Bulk Re-stock Branch (/api/branches)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (products.length > 0) setTransferProduct(products[0]);
+                      setTransferModalOpen(true);
+                    }}
+                    className="bg-plum hover:bg-plum-dark text-white font-black text-xs px-4 py-3 rounded-2xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                  >
+                    <ArrowLeftRight className="w-4 h-4 text-amber-300" />
+                    <span>Execute Inter-Branch Transfer</span>
+                  </button>
+                </div>
               )}
+            </div>
+
+            {/* Inventory Levels Bar Chart across Supermarket Branches */}
+            <div className="bg-white border border-gray-150 rounded-3xl p-6 shadow-xs space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-plum" />
+                    <span>Multi-Branch Stock Level Inventory Comparison</span>
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Aggregated stock quantities and inventory levels across all 6 K-Matt Supermarket branches (using product branchId and branchStock aggregation).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                    Total HQ Stock: {products.reduce((acc, p) => acc + p.stock, 0)} Units
+                  </span>
+                </div>
+              </div>
+
+              <div className="h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={BRANCHES.map((b, idx) => {
+                    let totalUnits = 0;
+                    let totalValue = 0;
+                    let primaryBranchCount = 0;
+                    products.forEach(p => {
+                      const bQty = getProductStockForBranch(p, b.id);
+                      totalUnits += bQty;
+                      totalValue += bQty * p.price;
+                      if (p.branchId === b.id) primaryBranchCount++;
+                    });
+                    const palette = ['#7209B7', '#4361EE', '#3A0CA3', '#4CC9F0', '#F72585', '#10B981'];
+                    return {
+                      branchId: b.id,
+                      name: b.town,
+                      fullName: b.name,
+                      totalUnits,
+                      primaryBranchCount,
+                      valueKSh: Math.round(totalValue),
+                      fillColor: palette[idx % palette.length]
+                    };
+                  })}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} />
+                    <YAxis tick={{ fontSize: 11, fontWeight: 600 }} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1E293B', 
+                        borderRadius: '16px', 
+                        border: 'none', 
+                        color: '#fff',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                      }}
+                      formatter={(value: any, name: string) => {
+                        if (name === 'totalUnits') return [`${value} Units`, 'Total Branch Stock'];
+                        if (name === 'primaryBranchCount') return [`${value} Products`, 'Primary Assigned'];
+                        return [value, name];
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', fontWeight: 'bold' }} />
+                    <Bar dataKey="totalUnits" name="Branch Total Stock Units" radius={[8, 8, 0, 0]}>
+                      {BRANCHES.map((b, idx) => {
+                        const palette = ['#7209B7', '#4361EE', '#3A0CA3', '#4CC9F0', '#F72585', '#10B981'];
+                        return <Cell key={`cell-${b.id}`} fill={palette[idx % palette.length]} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* 6 Branch Network Cards Grid */}
@@ -1675,16 +1855,16 @@ export default function AdminPortal({
                 return (
                   <div 
                     key={b.id} 
-                    className={`bg-white dark:bg-gray-900 rounded-3xl p-5 border transition-all space-y-4 shadow-xs relative ${
+                    className={`bg-white rounded-3xl p-5 border transition-all space-y-4 shadow-xs relative ${
                       isSelected 
-                        ? 'border-plum dark:border-pink-500 ring-2 ring-plum/20 dark:ring-pink-500/20' 
-                        : 'border-gray-150 dark:border-gray-800 hover:border-gray-300'
+                        ? 'border-plum ring-2 ring-plum/20' 
+                        : 'border-gray-150 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-black text-base text-gray-900 dark:text-white">{b.name}</h3>
+                          <h3 className="font-black text-base text-gray-900">{b.name}</h3>
                           {b.isMain && (
                             <span className="bg-plum text-white text-[9px] font-black px-2 py-0.5 rounded-full">
                               HQ Main
@@ -1703,7 +1883,7 @@ export default function AdminPortal({
                     </div>
 
                     {/* Stock Metrics for this Branch */}
-                    <div className="grid grid-cols-3 gap-2 bg-gray-50 dark:bg-gray-800/60 p-3 rounded-2xl text-center">
+                    <div className="grid grid-cols-3 gap-2 bg-gray-50 p-3 rounded-2xl text-center">
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase">Available SKUs</p>
                         <p className="text-sm font-black text-emerald-500">{inStockCount}</p>
@@ -1714,7 +1894,7 @@ export default function AdminPortal({
                       </div>
                       <div>
                         <p className="text-[10px] font-bold text-gray-400 uppercase">Total Units</p>
-                        <p className="text-sm font-black text-plum dark:text-pink-400">{totalStockUnits}</p>
+                        <p className="text-sm font-black text-plum">{totalStockUnits}</p>
                       </div>
                     </div>
 
@@ -1729,14 +1909,14 @@ export default function AdminPortal({
                       </p>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-between border-t border-gray-100 dark:border-gray-800 gap-2">
+                    <div className="pt-2 flex items-center justify-between border-t border-gray-100 gap-2">
                       <button
                         type="button"
                         onClick={() => setAdminSelectedBranch(isSelected ? 'all' : b.id)}
                         className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                           isSelected 
                             ? 'bg-plum text-white shadow-xs' 
-                            : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                       >
                         {isSelected ? '✓ Viewing Scope' : 'Filter View'}
@@ -1750,7 +1930,7 @@ export default function AdminPortal({
                             setTransferFromBranch(b.id);
                             setTransferModalOpen(true);
                           }}
-                          className="py-2 px-3 rounded-xl bg-amber-400/20 text-amber-900 dark:text-amber-300 hover:bg-amber-400/30 text-xs font-black transition-all cursor-pointer flex items-center gap-1"
+                          className="py-2 px-3 rounded-xl bg-amber-400/20 text-amber-900 hover:bg-amber-400/30 text-xs font-black transition-all cursor-pointer flex items-center gap-1"
                         >
                           <ArrowLeftRight className="w-3.5 h-3.5" />
                           <span>Transfer</span>
@@ -1763,10 +1943,10 @@ export default function AdminPortal({
             </div>
 
             {/* Multi-Branch Stock Control Matrix */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl shadow-xs overflow-hidden space-y-4 p-6">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-150 dark:border-gray-800 pb-4">
+            <div className="bg-white border border-gray-150 rounded-3xl shadow-xs overflow-hidden space-y-4 p-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-150 pb-4">
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                     <Package className="w-5 h-5 text-plum" />
                     <span>Multi-Branch Inventory Stock Matrix</span>
                   </h3>
@@ -1781,18 +1961,18 @@ export default function AdminPortal({
                     placeholder="Search product matrix..."
                     value={matrixSearch}
                     onChange={(e) => setMatrixSearch(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                    className="w-full text-xs p-2.5 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none"
                   />
                 </div>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 font-extrabold border-b border-gray-200 dark:border-gray-800">
+                  <thead className="bg-gray-50 text-gray-500 font-extrabold border-b border-gray-200">
                     <tr>
                       <th className="py-3 px-4 min-w-[200px]">Product Item</th>
                       <th className="py-3 px-3">Category</th>
-                      <th className="py-3 px-3 text-center bg-plum/5 dark:bg-plum/10 text-plum dark:text-pink-400 font-black">
+                      <th className="py-3 px-3 text-center bg-plum/5 text-plum font-black">
                         Total HQ
                       </th>
                       {BRANCHES.map(b => (
@@ -1803,25 +1983,25 @@ export default function AdminPortal({
                       {!isReadOnly && <th className="py-3 px-4 text-right">Transfer</th>}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                  <tbody className="divide-y divide-gray-100 font-medium">
                     {products
                       .filter(p => !matrixSearch || p.name.toLowerCase().includes(matrixSearch.toLowerCase()) || p.category.toLowerCase().includes(matrixSearch.toLowerCase()))
                       .map(p => {
                         return (
-                          <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                          <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2.5">
-                                <img src={p.image} alt={p.name} className="w-8 h-8 object-cover rounded-lg border border-gray-200 dark:border-gray-700" />
+                                <img src={p.image} alt={p.name} className="w-8 h-8 object-cover rounded-lg border border-gray-200" />
                                 <div>
-                                  <p className="font-extrabold text-gray-900 dark:text-white text-xs leading-tight">{p.name}</p>
+                                  <p className="font-extrabold text-gray-900 text-xs leading-tight">{p.name}</p>
                                   <p className="text-[10px] text-gray-500">{formatMoney(p.price)}</p>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3 px-3 capitalize font-semibold text-gray-600 dark:text-gray-400 text-[11px]">
+                            <td className="py-3 px-3 capitalize font-semibold text-gray-600 text-[11px]">
                               {p.category}
                             </td>
-                            <td className="py-3 px-3 text-center font-black text-plum dark:text-pink-400 bg-plum/5 dark:bg-plum/10 text-sm">
+                            <td className="py-3 px-3 text-center font-black text-plum bg-plum/5 text-sm">
                               {p.stock}
                             </td>
                             {BRANCHES.map(b => {
@@ -1842,8 +2022,8 @@ export default function AdminPortal({
                                       onChange={(e) => handleUpdateBranchStock(p.id, b.id, Number(e.target.value))}
                                       className={`w-14 p-1 rounded-lg border text-center text-xs font-black outline-none transition-all ${
                                         bQty <= 0 
-                                          ? 'border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400' 
-                                          : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:border-plum'
+                                          ? 'border-red-300 bg-red-50 text-red-600' 
+                                          : 'border-gray-200 bg-gray-50 text-gray-900 focus:border-plum'
                                       }`}
                                     />
                                   )}
@@ -1858,7 +2038,7 @@ export default function AdminPortal({
                                     setTransferProduct(p);
                                     setTransferModalOpen(true);
                                   }}
-                                  className="p-1.5 rounded-lg bg-gray-100 hover:bg-plum hover:text-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer"
+                                  className="p-1.5 rounded-lg bg-gray-100 hover:bg-plum hover:text-white text-gray-700 transition-colors cursor-pointer"
                                   title={`Transfer ${p.name}`}
                                 >
                                   <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -1880,7 +2060,7 @@ export default function AdminPortal({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-plum" />
                   <span>Administrator User Management</span>
                 </h2>
@@ -1907,9 +2087,9 @@ export default function AdminPortal({
             {/* Admin Modal */}
             {isAddingAdminModal && (
               <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
-                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl">
-                  <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-800 pb-4">
-                    <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl">
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-4">
+                    <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                       <Users className="w-5 h-5 text-plum" />
                       <span>{editingAdminUser ? 'Edit Administrator Profile' : 'Create Administrator Account'}</span>
                     </h3>
@@ -1930,7 +2110,7 @@ export default function AdminPortal({
                         value={newAdminName} 
                         onChange={(e) => setNewAdminName(e.target.value)}
                         placeholder="e.g. Samuel Mutiso"
-                        className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                        className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                       />
                     </div>
 
@@ -1942,7 +2122,7 @@ export default function AdminPortal({
                         value={newAdminEmail} 
                         onChange={(e) => setNewAdminEmail(e.target.value)}
                         placeholder="e.g. samuel@kipchimatt.co.ke"
-                        className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                        className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                       />
                     </div>
 
@@ -1952,7 +2132,7 @@ export default function AdminPortal({
                         <select 
                           value={newAdminRole} 
                           onChange={(e) => setNewAdminRole(e.target.value as AdminRole)}
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                         >
                           <option value="super_admin">Super Admin (Full Rights)</option>
                           <option value="inventory_manager">Inventory Manager</option>
@@ -1969,7 +2149,7 @@ export default function AdminPortal({
                           value={newAdminPin} 
                           onChange={(e) => setNewAdminPin(e.target.value)}
                           placeholder="e.g. 1234"
-                          className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold tracking-widest text-center"
+                          className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold tracking-widest text-center"
                         />
                       </div>
                     </div>
@@ -1981,15 +2161,15 @@ export default function AdminPortal({
                         value={newAdminDept} 
                         onChange={(e) => setNewAdminDept(e.target.value)}
                         placeholder="e.g. Kericho Main Branch Logistics"
-                        className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                        className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                       <button 
                         type="button"
                         onClick={() => setIsAddingAdminModal(false)}
-                        className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                        className="px-5 py-2.5 rounded-xl border border-gray-300 font-bold hover:bg-gray-100 cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -2006,10 +2186,10 @@ export default function AdminPortal({
             )}
 
             {/* Admin Users Table */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-gray-150 rounded-3xl shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 font-extrabold border-b border-gray-200 dark:border-gray-800">
+                  <thead className="bg-gray-50 text-gray-500 font-extrabold border-b border-gray-200">
                     <tr>
                       <th className="py-3.5 px-4">Administrator</th>
                       <th className="py-3.5 px-4">Assigned Role</th>
@@ -2020,16 +2200,16 @@ export default function AdminPortal({
                       <th className="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                  <tbody className="divide-y divide-gray-100 font-medium">
                     {adminUsers.map(u => (
-                      <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                      <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-plum text-white font-black text-xs flex items-center justify-center shrink-0 border border-plum/30">
                               {u.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-extrabold text-gray-900 dark:text-white text-sm">{u.name}</p>
+                              <p className="font-extrabold text-gray-900 text-sm">{u.name}</p>
                               <p className="text-gray-500 text-[10px] font-mono">{u.email}</p>
                             </div>
                           </div>
@@ -2037,14 +2217,14 @@ export default function AdminPortal({
                         <td className="py-3.5 px-4">
                           {getRoleBadge(u.role)}
                         </td>
-                        <td className="py-3.5 px-4 text-gray-700 dark:text-gray-300 font-bold">
+                        <td className="py-3.5 px-4 text-gray-700 font-bold">
                           {u.department || 'Operations'}
                         </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-gray-500">
                           •••• ({u.pin})
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 flex items-center gap-1 w-fit">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 flex items-center gap-1 w-fit">
                             <ShieldCheck className="w-3 h-3 text-emerald-500" />
                             Enforced (TOTP)
                           </span>
@@ -2062,7 +2242,7 @@ export default function AdminPortal({
                                 if (onUpdateAdmin) onUpdateAdmin(updated);
                                 onShowToast(`Status for ${u.name} set to ${!u.active ? 'ACTIVE' : 'DISABLED'}`);
                               }}
-                              className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 text-[10px] font-bold cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-bold cursor-pointer"
                             >
                               {u.active ? 'Disable' : 'Enable'}
                             </button>
@@ -2076,7 +2256,7 @@ export default function AdminPortal({
                                 setNewAdminDept(u.department || '');
                                 setIsAddingAdminModal(true);
                               }}
-                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-lg cursor-pointer"
+                              className="p-1.5 hover:bg-gray-100 text-gray-600 rounded-lg cursor-pointer"
                               title="Edit Admin"
                             >
                               <Edit className="w-4 h-4" />
@@ -2087,7 +2267,7 @@ export default function AdminPortal({
                                   if (onDeleteAdmin) onDeleteAdmin(u.id);
                                   onShowToast(`Deleted admin profile for ${u.name}`, 'info');
                                 }}
-                                className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 rounded-lg cursor-pointer"
+                                className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer"
                                 title="Delete Admin"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -2106,9 +2286,9 @@ export default function AdminPortal({
 
         {/* --- TAB 5: STORE CONFIGURATION (SUPER ADMIN ONLY) --- */}
         {activeTab === 'settings' && isSuperAdmin && (
-          <div className="max-w-2xl mx-auto bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl p-8 shadow-xs space-y-6">
+          <div className="max-w-2xl mx-auto bg-white border border-gray-150 rounded-3xl p-8 shadow-xs space-y-6">
             <div>
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">Global Store Configurations</h2>
+              <h2 className="text-xl font-black text-gray-900">Global Store Configurations</h2>
               <p className="text-xs text-gray-500">Update store branding, contact details, and delivery fee thresholds.</p>
             </div>
 
@@ -2120,7 +2300,7 @@ export default function AdminPortal({
                     type="text" 
                     value={storeName} 
                     onChange={(e) => setStoreName(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                    className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                   />
                 </div>
 
@@ -2130,7 +2310,7 @@ export default function AdminPortal({
                     type="text" 
                     value={storePhone} 
                     onChange={(e) => setStorePhone(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                    className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                   />
                 </div>
 
@@ -2140,7 +2320,7 @@ export default function AdminPortal({
                     type="email" 
                     value={storeEmail} 
                     onChange={(e) => setStoreEmail(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                    className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                   />
                 </div>
 
@@ -2150,7 +2330,7 @@ export default function AdminPortal({
                     type="number" 
                     value={deliveryFee} 
                     onChange={(e) => setDeliveryFee(Number(e.target.value))}
-                    className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                    className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                   />
                 </div>
               </div>
@@ -2161,8 +2341,49 @@ export default function AdminPortal({
                   type="number" 
                   value={freeThreshold} 
                   onChange={(e) => setFreeThreshold(Number(e.target.value))}
-                  className="w-full p-3 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-bold"
+                  className="w-full p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 font-bold"
                 />
+              </div>
+
+              {/* Product Card Color Theme Configuration */}
+              <div className="pt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block font-black text-gray-900 flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 text-plum" />
+                    <span>Storefront Product Card Colors Theme</span>
+                  </label>
+                  <span className="text-[10px] text-gray-500 font-bold">Default style for cards</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {(Object.keys(CARD_COLOR_THEMES) as CardColorThemeId[]).map((tKey) => {
+                    const themeObj = CARD_COLOR_THEMES[tKey];
+                    const isSelected = cardColorTheme === tKey;
+                    return (
+                      <div
+                        key={tKey}
+                        onClick={() => setCardColorTheme(tKey)}
+                        className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
+                          isSelected
+                            ? 'border-plum bg-plum/5'
+                            : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className={`w-4 h-4 rounded-full ${themeObj.swatchBg} shrink-0 ring-1 ring-black/10`} />
+                          <div className="min-w-0">
+                            <p className="font-black text-xs text-gray-900 truncate">{themeObj.name}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{themeObj.description}</p>
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <div className="w-4 h-4 rounded-full bg-plum text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <button type="submit" className="w-full bg-plum text-white font-extrabold py-3.5 rounded-xl cursor-pointer hover:bg-plum-dark transition-colors">
@@ -2177,7 +2398,7 @@ export default function AdminPortal({
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
                   <FileText className="w-5 h-5 text-emerald-400" />
                   <span>Security & System Audit Logs</span>
                 </h2>
@@ -2199,7 +2420,7 @@ export default function AdminPortal({
                       if (onClearAuditLogs) onClearAuditLogs();
                       onShowToast('Audit history archived and cleared.', 'info');
                     }}
-                    className="bg-gray-100 dark:bg-gray-800 hover:bg-red-600 hover:text-white text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-2.5 rounded-xl transition-colors cursor-pointer"
+                    className="bg-gray-100 hover:bg-red-600 hover:text-white text-gray-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-colors cursor-pointer"
                   >
                     Clear History
                   </button>
@@ -2208,7 +2429,7 @@ export default function AdminPortal({
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl p-4 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="bg-white border border-gray-150 rounded-2xl p-4 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div>
                 <label className="block font-bold text-gray-500 mb-1">Search Log Details</label>
                 <div className="relative">
@@ -2217,7 +2438,7 @@ export default function AdminPortal({
                     placeholder="Search action or details..."
                     value={logSearchQuery}
                     onChange={(e) => setLogSearchQuery(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none"
+                    className="w-full p-2.5 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none"
                   />
                   <Search className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3" />
                 </div>
@@ -2228,7 +2449,7 @@ export default function AdminPortal({
                 <select 
                   value={logCategoryFilter}
                   onChange={(e) => setLogCategoryFilter(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none cursor-pointer font-bold"
+                  className="w-full p-2.5 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none cursor-pointer font-bold"
                 >
                   <option value="all">All Categories ({auditLogs.length})</option>
                   <option value="products">Products & Pricing</option>
@@ -2245,7 +2466,7 @@ export default function AdminPortal({
                 <select 
                   value={logAdminFilter}
                   onChange={(e) => setLogAdminFilter(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-gray-250 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white outline-none cursor-pointer font-bold"
+                  className="w-full p-2.5 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none cursor-pointer font-bold"
                 >
                   <option value="all">All Admin Users</option>
                   {adminUsers.map(u => (
@@ -2256,16 +2477,16 @@ export default function AdminPortal({
             </div>
 
             {/* Audit Log Timeline Table */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-3xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-gray-150 rounded-3xl shadow-sm overflow-hidden">
               {filteredAuditLogs.length === 0 ? (
                 <div className="p-12 text-center text-gray-500 space-y-2">
-                  <FileText className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-700" />
+                  <FileText className="w-10 h-10 mx-auto text-gray-300" />
                   <p className="font-bold">No audit log entries match your filter.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-gray-50 dark:bg-gray-800/50 text-gray-500 font-extrabold border-b border-gray-200 dark:border-gray-800">
+                    <thead className="bg-gray-50 text-gray-500 font-extrabold border-b border-gray-200">
                       <tr>
                         <th className="py-3.5 px-4">Date & Time</th>
                         <th className="py-3.5 px-4">Category</th>
@@ -2274,26 +2495,26 @@ export default function AdminPortal({
                         <th className="py-3.5 px-4">Administrator</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
+                    <tbody className="divide-y divide-gray-100 font-medium">
                       {filteredAuditLogs.map(log => (
-                        <tr key={log.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+                        <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
                           <td className="py-3 px-4 font-mono text-[11px] text-gray-500 shrink-0">
                             {new Date(log.timestamp).toLocaleString()}
                           </td>
                           <td className="py-3 px-4">
-                            <span className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
+                            <span className="bg-gray-100 border border-gray-200 text-gray-700 text-[10px] font-black uppercase px-2 py-0.5 rounded-full">
                               {log.category}
                             </span>
                           </td>
-                          <td className="py-3 px-4 font-black text-gray-900 dark:text-white">
+                          <td className="py-3 px-4 font-black text-gray-900">
                             {log.action}
                           </td>
-                          <td className="py-3 px-4 text-gray-700 dark:text-gray-300 font-medium max-w-md">
+                          <td className="py-3 px-4 text-gray-700 font-medium max-w-md">
                             {log.details}
                           </td>
                           <td className="py-3 px-4">
                             <div>
-                              <p className="font-bold text-gray-900 dark:text-white text-[11px]">{log.adminName}</p>
+                              <p className="font-bold text-gray-900 text-[11px]">{log.adminName}</p>
                               <p className="text-[10px] text-gray-500 font-mono">{log.adminEmail}</p>
                             </div>
                           </td>
@@ -2303,6 +2524,166 @@ export default function AdminPortal({
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Branch Restock Modal via /api/branches sync */}
+        {bulkModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-6 shadow-2xl">
+              <div className="flex justify-between items-center border-b border-gray-150 pb-4">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                    <RefreshCw className="w-5 h-5 text-plum" />
+                    <span>Bulk Re-stock Branch Inventory via /api/branches</span>
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Bulk update product stock quantities for a specific supermarket branch in one single batch sync.
+                  </p>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setBulkModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleExecuteBulkBranchRestock} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-extrabold text-gray-700 mb-1">
+                      Select Target Branch *
+                    </label>
+                    <select
+                      value={bulkBranchId}
+                      onChange={(e) => {
+                        const newB = e.target.value;
+                        setBulkBranchId(newB);
+                        const initial: Record<number, number> = {};
+                        products.forEach(p => {
+                          initial[p.id] = getProductStockForBranch(p, newB);
+                        });
+                        setBulkQtyInput(initial);
+                      }}
+                      className="w-full text-xs font-extrabold p-3 rounded-xl border border-gray-250 bg-gray-50 text-gray-900 outline-none cursor-pointer"
+                    >
+                      {BRANCHES.map(b => (
+                        <option key={b.id} value={b.id}>
+                          {b.name} ({b.town}, {b.county})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated: Record<number, number> = { ...bulkQtyInput };
+                        products.forEach(p => {
+                          const current = updated[p.id] !== undefined ? updated[p.id] : getProductStockForBranch(p, bulkBranchId);
+                          updated[p.id] = current + 20;
+                        });
+                        setBulkQtyInput(updated);
+                      }}
+                      className="w-full bg-amber-400/20 hover:bg-amber-400/30 text-amber-900 text-xs font-black p-3 rounded-xl transition-all cursor-pointer text-center"
+                    >
+                      + Quick Add +20
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated: Record<number, number> = { ...bulkQtyInput };
+                        products.forEach(p => {
+                          const current = getProductStockForBranch(p, bulkBranchId);
+                          if (current < 10) {
+                            updated[p.id] = 50;
+                          }
+                        });
+                        setBulkQtyInput(updated);
+                      }}
+                      className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-600 text-xs font-black p-3 rounded-xl transition-all cursor-pointer text-center"
+                    >
+                      Re-stock Low Items
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-2xl max-h-80 overflow-y-auto divide-y divide-gray-100">
+                  {products.map(p => {
+                    const currentStock = getProductStockForBranch(p, bulkBranchId);
+                    const val = bulkQtyInput[p.id] !== undefined ? bulkQtyInput[p.id] : currentStock;
+                    return (
+                      <div key={p.id} className="p-3 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img src={p.image} alt={p.name} className="w-8 h-8 object-cover rounded-lg shrink-0" />
+                          <div className="truncate">
+                            <p className="font-extrabold text-gray-900 truncate">{p.name}</p>
+                            <p className="text-[10px] text-gray-500">Current Branch Stock: <span className="font-black text-plum">{currentStock}</span> | Total HQ: {p.stock}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            type="number"
+                            min="0"
+                            value={val}
+                            onChange={(e) => {
+                              setBulkQtyInput({
+                                ...bulkQtyInput,
+                                [p.id]: Number(e.target.value)
+                              });
+                            }}
+                            className="w-20 p-2 rounded-xl border border-gray-250 bg-gray-50 text-center font-black text-xs text-gray-900 outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBulkQtyInput({
+                                ...bulkQtyInput,
+                                [p.id]: val + 10
+                              });
+                            }}
+                            className="p-2 rounded-xl bg-gray-100 hover:bg-plum hover:text-white text-gray-700 font-bold transition-all text-xs cursor-pointer"
+                          >
+                            +10
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkModalOpen(false)}
+                    className="px-5 py-3 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isBulkSyncing}
+                    className="px-6 py-3 rounded-xl bg-plum hover:bg-plum-dark text-white font-black text-xs shadow-md transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    {isBulkSyncing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        <span>Syncing via /api/branches...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-300" />
+                        <span>Execute /api/branches Sync</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

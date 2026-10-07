@@ -44,7 +44,14 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const existingIds = new Set(parsed.map((p: Product) => p.id));
           const missing = defaultProducts.filter(p => !existingIds.has(p.id));
-          return missing.length > 0 ? [...parsed, ...missing] : parsed;
+          if (missing.length > 0) {
+            const combined = [...parsed, ...missing];
+            try {
+              localStorage.setItem('kipchimatt_products', JSON.stringify(combined));
+            } catch (e) {}
+            return combined;
+          }
+          return parsed;
         }
       }
     } catch (e) {}
@@ -250,15 +257,7 @@ export default function App() {
   // --- Newsletter State ---
   const [newsletterEmail, setNewsletterEmail] = useState('');
 
-  // --- Global Theme & Compare States ---
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('kipchimatt_dark_mode') === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
-
+  // --- Global State & Compare ---
   const [comparedProducts, setComparedProducts] = useState<Product[]>([]);
   const [compareOpen, setCompareOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
@@ -421,14 +420,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('kipchimatt_dark_mode', 'true');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('kipchimatt_dark_mode', 'false');
-    }
-  }, [isDark]);
+    document.documentElement.classList.remove('dark');
+    try {
+      localStorage.removeItem('kipchimatt_dark_mode');
+    } catch (e) {}
+  }, []);
 
   const handleToggleCompare = (product: Product) => {
     setComparedProducts(prev => {
@@ -1077,8 +1073,6 @@ export default function App() {
           handleLogoutAdmin();
           showToast('Administrative session signed out.', 'info');
         }}
-        isDark={isDark}
-        onToggleTheme={() => setIsDark(prev => !prev)}
         onToggleUserProfile={() => setUserProfileOpen(prev => !prev)}
         selectedBranchId={selectedBranchId}
         onOpenBranchModal={() => setIsBranchModalOpen(true)}
@@ -1130,8 +1124,6 @@ export default function App() {
             setCurrentView('shop');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          isDark={isDark}
-          onToggleTheme={() => setIsDark(prev => !prev)}
         />
       ) : currentView === 'shop' ? (
         <div className="flex-1 flex flex-col">
@@ -1170,6 +1162,8 @@ export default function App() {
             onShowToast={showToast}
             selectedBranchId={selectedBranchId}
             onOpenBranchModal={() => setIsBranchModalOpen(true)}
+            cardColorTheme={settings.cardColorTheme || 'plum'}
+            onChangeCardColorTheme={(t) => setSettings(prev => ({ ...prev, cardColorTheme: t }))}
           />
         </div>
       ) : (
@@ -1439,7 +1433,7 @@ export default function App() {
 
       {/* Floating Specs Compare Bottom Tray Bar */}
       {comparedProducts.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/95 dark:bg-black/95 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-6 z-40 border border-white/10 max-w-[95vw] md:max-w-xl transition-all duration-300">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/95 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-6 z-40 border border-white/10 max-w-[95vw] md:max-w-xl transition-all duration-300">
           <div className="flex-1">
             <h4 className="text-xs font-black uppercase tracking-wider text-white">Compare Tray</h4>
             <span className="text-[10px] text-gray-300 font-bold">{comparedProducts.length} of 3 items selected</span>
@@ -1553,15 +1547,15 @@ export default function App() {
           </button>
 
           {accessibilityOpen && (
-            <div className="absolute bottom-16 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-2xl shadow-2xl w-72 space-y-4 animate-scale-up text-gray-800 dark:text-gray-100 border-r-4 border-r-plum">
-              <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-2.5">
-                <h3 className="font-extrabold text-sm flex items-center gap-2 text-gray-800 dark:text-white">
+            <div className="absolute bottom-16 right-0 bg-white border border-gray-200 p-5 rounded-2xl shadow-2xl w-72 space-y-4 animate-scale-up text-gray-800 border-r-4 border-r-plum">
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
+                <h3 className="font-extrabold text-sm flex items-center gap-2 text-gray-800">
                   <Eye className="w-4.5 h-4.5 text-plum" />
                   <span>Accessibility Hub</span>
                 </h3>
                 <button 
                   onClick={() => setAccessibilityOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                  className="text-gray-400 hover:text-gray-600 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1576,7 +1570,7 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setFontSizeScale(Math.max(0.85, fontSizeScale - 0.15))}
-                    className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs font-bold hover:bg-gray-200"
+                    className="bg-gray-100 px-2 py-1 rounded text-xs font-bold hover:bg-gray-200"
                   >
                     A-
                   </button>
@@ -1591,7 +1585,7 @@ export default function App() {
                   />
                   <button 
                     onClick={() => setFontSizeScale(Math.min(1.45, fontSizeScale + 0.15))}
-                    className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs font-bold hover:bg-gray-200"
+                    className="bg-gray-100 px-2 py-1 rounded text-xs font-bold hover:bg-gray-200"
                   >
                     A+
                   </button>
@@ -1601,7 +1595,7 @@ export default function App() {
               {/* High Contrast Mode Toggle */}
               <label className="flex items-center justify-between cursor-pointer select-none py-1">
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-gray-850 dark:text-gray-100">High Contrast</span>
+                  <span className="text-xs font-bold text-gray-850">High Contrast</span>
                   <span className="text-[10px] text-plum font-extrabold uppercase tracking-wider">{highContrast ? 'Enabled' : 'Disabled'}</span>
                 </div>
                 <input 
@@ -1612,18 +1606,18 @@ export default function App() {
                     setHighContrast(next);
                     localStorage.setItem('kipchimatt_high_contrast', String(next));
                   }}
-                  className="rounded border-gray-350 dark:border-gray-750 text-plum focus:ring-plum w-4 h-4 cursor-pointer"
+                  className="rounded border-gray-350 text-plum focus:ring-plum w-4 h-4 cursor-pointer"
                 />
               </label>
 
               {/* Monochrome Mode Toggle */}
               <label className="flex items-center justify-between cursor-pointer select-none py-1">
-                <span className="text-xs font-bold text-gray-600 dark:text-gray-300">Monochrome / Grayscale</span>
+                <span className="text-xs font-bold text-gray-600">Monochrome / Grayscale</span>
                 <input 
                   type="checkbox"
                   checked={monochrome}
                   onChange={() => setMonochrome(!monochrome)}
-                  className="rounded border-gray-350 dark:border-gray-750 text-plum focus:ring-plum w-4 h-4 cursor-pointer"
+                  className="rounded border-gray-350 text-plum focus:ring-plum w-4 h-4 cursor-pointer"
                 />
               </label>
 
@@ -1635,7 +1629,7 @@ export default function App() {
                   setMonochrome(false);
                   showToast('Accessibility preferences reset.', 'info');
                 }}
-                className="w-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-[10px] font-extrabold text-gray-600 dark:text-gray-300 uppercase tracking-widest py-2 rounded-xl transition-colors cursor-pointer"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-[10px] font-extrabold text-gray-600 uppercase tracking-widest py-2 rounded-xl transition-colors cursor-pointer"
               >
                 Reset Preferences
               </button>
@@ -1647,46 +1641,46 @@ export default function App() {
       {/* Low Stock Urgent Purchase Popup Notification Modal */}
       {urgentStockProduct && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[99999] animate-fade-in">
-          <div className="bg-white dark:bg-gray-950 rounded-3xl border-2 border-plum/40 p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-5 animate-scale-up relative overflow-hidden">
+          <div className="bg-white rounded-3xl border-2 border-plum/40 p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-5 animate-scale-up relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-red animate-pulse" />
             
             <button 
               onClick={() => setUrgentStockProduct(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer p-1.5 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-full"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 cursor-pointer p-1.5 hover:bg-gray-100 rounded-full"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-950/40 text-red flex items-center justify-center mx-auto animate-bounce">
+            <div className="w-16 h-16 rounded-full bg-red-50 text-red flex items-center justify-center mx-auto animate-bounce">
               <AlertTriangle className="w-8 h-8" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center justify-center gap-1.5">
+              <h3 className="text-lg sm:text-xl font-black text-gray-900 uppercase tracking-tight flex items-center justify-center gap-1.5">
                 <Sparkles className="w-5 h-5 text-white fill-white animate-pulse" />
                 <span>Demand is Extremely High!</span>
               </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              <p className="text-xs text-gray-500 font-medium">
                 You added <strong className="text-plum font-bold">{urgentStockProduct.name}</strong> to your basket.
               </p>
             </div>
 
             {/* Product card inside alert */}
-            <div className="p-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-150 dark:border-gray-800 rounded-2xl flex items-center gap-3">
-              <img src={urgentStockProduct.image} alt={urgentStockProduct.name} className="w-14 h-14 object-cover rounded-xl border border-gray-200 dark:border-gray-850" />
+            <div className="p-3.5 bg-gray-50 border border-gray-150 rounded-2xl flex items-center gap-3">
+              <img src={urgentStockProduct.image} alt={urgentStockProduct.name} className="w-14 h-14 object-cover rounded-xl border border-gray-200" />
               <div className="text-left flex-1 min-w-0">
                 <span className="text-[10px] text-red font-extrabold uppercase tracking-widest block animate-pulse">
                   Only {urgentStockProduct.stock} Left In Stock!
                 </span>
-                <h4 className="font-extrabold text-xs text-gray-800 dark:text-gray-100 truncate">{urgentStockProduct.name}</h4>
+                <h4 className="font-extrabold text-xs text-gray-800 truncate">{urgentStockProduct.name}</h4>
                 <p className="text-sm font-black text-plum mt-0.5">{formatMoney(urgentStockProduct.price)}</p>
               </div>
             </div>
 
             {/* Order reservation countdown */}
-            <div className="p-3 bg-red-50 dark:bg-red-950/25 border border-red-100 dark:border-red-900/20 rounded-xl">
-              <span className="text-[10px] text-red-700 dark:text-red-300 font-extrabold uppercase tracking-widest block">Cart Reservation Clock</span>
-              <span className="font-mono text-xl font-extrabold text-red dark:text-red-400 block mt-0.5">
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl">
+              <span className="text-[10px] text-red-700 font-extrabold uppercase tracking-widest block">Cart Reservation Clock</span>
+              <span className="font-mono text-xl font-extrabold text-red block mt-0.5">
                 {formatUrgentTime(urgentTimer)}
               </span>
               <span className="text-[9px] text-gray-400 block mt-0.5">Secure your items before they sell out!</span>
@@ -1705,7 +1699,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setUrgentStockProduct(null)}
-                className="w-full bg-white dark:bg-transparent border border-gray-250 dark:border-gray-800 hover:bg-gray-50 text-gray-600 dark:text-gray-300 font-bold text-xs py-2.5 rounded-2xl cursor-pointer transition-colors"
+                className="w-full bg-white border border-gray-250 hover:bg-gray-50 text-gray-600 font-bold text-xs py-2.5 rounded-2xl cursor-pointer transition-colors"
               >
                 Continue Shopping
               </button>

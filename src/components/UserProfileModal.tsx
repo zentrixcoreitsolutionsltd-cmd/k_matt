@@ -10,6 +10,7 @@ import { Customer, Order, CartItem } from '../types';
 import { formatMoney } from '../data/catalog';
 import { KENYA_COUNTIES } from '../data/counties';
 import { BRANCHES, getNearestBranchForCustomer, getDistanceToBranchKm } from '../data/branches';
+import LoyaltyPointsChart from './LoyaltyPointsChart';
 
 interface LoyaltyTier {
   id: 'bronze' | 'silver' | 'gold' | 'platinum';
@@ -31,8 +32,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     minPoints: 0,
     maxPoints: 199,
     icon: '🥉',
-    badgeBg: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300',
-    textColor: 'text-amber-600 dark:text-amber-400',
+    badgeBg: 'bg-amber-100 text-amber-800 border-amber-300',
+    textColor: 'text-amber-600',
     bgGradient: 'from-amber-700 to-amber-900',
     discountDesc: 'Redeem points directly at checkout (1 Pt = KSh 1)',
     perks: ['Earn 1 point per KSh 100 spent', 'Weekly digital catalog updates']
@@ -43,8 +44,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     minPoints: 200,
     maxPoints: 499,
     icon: '🥈',
-    badgeBg: 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 border-slate-400',
-    textColor: 'text-slate-500 dark:text-slate-300',
+    badgeBg: 'bg-slate-200 text-slate-800 border-slate-400',
+    textColor: 'text-slate-500',
     bgGradient: 'from-slate-600 to-slate-800',
     discountDesc: 'Redeem points directly on orders + priority verification',
     perks: ['Priority M-PESA payment verification', 'Free express pickup option']
@@ -55,8 +56,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     minPoints: 500,
     maxPoints: 999,
     icon: '🥇',
-    badgeBg: 'bg-plum/10 text-plum dark:bg-plum/30 dark:text-pink-300 border-plum/30',
-    textColor: 'text-plum dark:text-pink-300',
+    badgeBg: 'bg-plum/10 text-plum border-plum/30',
+    textColor: 'text-plum',
     bgGradient: 'from-plum via-pink-600 to-plum-dark',
     discountDesc: 'Redeem points directly + Express Same-Day Delivery',
     perks: ['Dedicated support helpline', 'Exclusive early flash sale access']
@@ -67,8 +68,8 @@ const LOYALTY_TIERS: LoyaltyTier[] = [
     minPoints: 1000,
     maxPoints: Infinity,
     icon: '💎',
-    badgeBg: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-950 dark:text-cyan-200 border-cyan-400',
-    textColor: 'text-cyan-500 dark:text-cyan-300',
+    badgeBg: 'bg-cyan-100 text-cyan-900 border-cyan-400',
+    textColor: 'text-cyan-500',
     bgGradient: 'from-purple-700 via-indigo-700 to-cyan-600',
     discountDesc: 'Redeem points on any order + Free delivery on ALL orders',
     perks: ['Free delivery on ALL orders', 'Annual birthday voucher & bonus points']
@@ -326,7 +327,7 @@ export default function UserProfileModal({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fadeIn">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-800 my-auto">
+      <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-gray-100 my-auto">
         
         {/* Header Banner */}
         <div className="bg-plum p-5 text-white flex justify-between items-center relative overflow-hidden">
@@ -360,34 +361,34 @@ export default function UserProfileModal({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 px-3 pt-2 gap-1 text-xs font-bold overflow-x-auto no-scrollbar">
+        <div className="flex border-b border-gray-200 bg-gray-50 px-3 pt-2 gap-1 text-xs font-bold overflow-x-auto no-scrollbar">
           {customer ? (
             <>
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'profile' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'profile' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
               >
                 <User className="w-3.5 h-3.5" />
                 <span>My Profile</span>
               </button>
               <button
                 onClick={() => setActiveTab('loyalty')}
-                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'loyalty' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'loyalty' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
               >
-                <Crown className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
+                <Crown className="w-3.5 h-3.5 text-plum" />
                 <span>Loyalty Tiers</span>
                 <span className="bg-plum text-white text-[9px] px-1.5 py-0.2 rounded-full font-extrabold">{points} pts</span>
               </button>
               <button
                 onClick={() => setActiveTab('points_history')}
-                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'points_history' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'points_history' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
               >
-                <History className="w-3.5 h-3.5 text-plum" />
-                <span>Points History</span>
+                <TrendingUp className="w-3.5 h-3.5 text-plum" />
+                <span>Points & 6-Mo Trends</span>
               </button>
               <button
                 onClick={() => setActiveTab('orders')}
-                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'orders' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'orders' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
               >
                 <Printer className="w-3.5 h-3.5 text-plum" />
                 <span>Receipts ({previousFiveOrders.length})</span>
@@ -397,14 +398,14 @@ export default function UserProfileModal({
             <>
               <button
                 onClick={() => setActiveTab('sign_in')}
-                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'sign_in' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'sign_in' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
               >
                 <LogIn className="w-3.5 h-3.5 text-plum" />
                 <span>Sign In</span>
               </button>
               <button
                 onClick={() => setActiveTab('create_account')}
-                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'create_account' ? 'border-plum text-plum dark:text-pink-400 font-black' : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+                className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${activeTab === 'create_account' ? 'border-plum text-plum font-black' : 'border-transparent text-gray-500 hover:text-gray-800'}`}
               >
                 <UserPlus className="w-3.5 h-3.5 text-green" />
                 <span>Create Account (Password + OTP)</span>
@@ -419,25 +420,25 @@ export default function UserProfileModal({
           {!customer && activeTab === 'sign_in' && (
             <div className="space-y-4 max-w-md mx-auto py-2">
               <div className="text-center space-y-1">
-                <h4 className="font-black text-gray-900 dark:text-white text-base">Sign In to Your Account</h4>
+                <h4 className="font-black text-gray-900 text-base">Sign In to Your Account</h4>
                 <p className="text-gray-500 font-medium text-xs">
                   Access your points balance, order history, and instant checkout.
                 </p>
               </div>
 
               {/* Login Mode Selector */}
-              <div className="flex rounded-xl bg-gray-100 dark:bg-gray-800 p-1 text-xs font-bold">
+              <div className="flex rounded-xl bg-gray-100 p-1 text-xs font-bold">
                 <button
                   type="button"
                   onClick={() => setLoginMode('password')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${loginMode === 'password' ? 'bg-white dark:bg-gray-700 text-plum dark:text-pink-300 shadow-xs' : 'text-gray-500'}`}
+                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${loginMode === 'password' ? 'bg-white text-plum shadow-xs' : 'text-gray-500'}`}
                 >
                   Password Sign In
                 </button>
                 <button
                   type="button"
                   onClick={() => setLoginMode('otp')}
-                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${loginMode === 'otp' ? 'bg-white dark:bg-gray-700 text-plum dark:text-pink-300 shadow-xs' : 'text-gray-500'}`}
+                  className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${loginMode === 'otp' ? 'bg-white text-plum shadow-xs' : 'text-gray-500'}`}
                 >
                   Phone SMS OTP
                 </button>
@@ -446,7 +447,7 @@ export default function UserProfileModal({
               {loginMode === 'password' ? (
                 <form onSubmit={handlePasswordLogin} className="space-y-3 pt-1">
                   <div>
-                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                    <label className="block text-gray-700 font-bold mb-1">
                       Phone Number or Email
                     </label>
                     <div className="relative">
@@ -456,14 +457,14 @@ export default function UserProfileModal({
                         value={loginPhoneOrEmail}
                         onChange={e => setLoginPhoneOrEmail(e.target.value)}
                         placeholder="e.g. 0712345678 or john@gmail.com"
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                    <label className="block text-gray-700 font-bold mb-1">
                       Password
                     </label>
                     <div className="relative">
@@ -473,7 +474,7 @@ export default function UserProfileModal({
                         value={loginPassword}
                         onChange={e => setLoginPassword(e.target.value)}
                         placeholder="Enter your account password"
-                        className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                         required
                       />
                       <button 
@@ -499,7 +500,7 @@ export default function UserProfileModal({
                   {loginOtpStep === 'input' ? (
                     <form onSubmit={handleSendLoginOtp} className="space-y-3">
                       <div>
-                        <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        <label className="block text-gray-700 font-bold mb-1">
                           Registered Phone Number (M-PESA)
                         </label>
                         <input 
@@ -507,7 +508,7 @@ export default function UserProfileModal({
                           value={loginPhoneOrEmail}
                           onChange={e => setLoginPhoneOrEmail(e.target.value)}
                           placeholder="e.g. 0712345678"
-                          className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                          className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                           required
                         />
                       </div>
@@ -522,21 +523,21 @@ export default function UserProfileModal({
                   ) : (
                     <form onSubmit={handleVerifyLoginOtp} className="space-y-3">
                       {/* SMS Simulation Banner */}
-                      <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl p-3 text-xs space-y-1 animate-pulse">
-                        <div className="flex items-center gap-1.5 font-black text-amber-900 dark:text-amber-200">
+                      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs space-y-1 animate-pulse">
+                        <div className="flex items-center gap-1.5 font-black text-amber-900">
                           <MessageSquareCode className="w-4 h-4 text-amber-600" />
                           <span>💬 K-Matt SMS Dispatcher</span>
                         </div>
-                        <p className="text-gray-800 dark:text-gray-200 font-semibold text-[11px]">
+                        <p className="text-gray-800 font-semibold text-[11px]">
                           Verification code for <strong>+254 {loginPhoneOrEmail}</strong> is:
                         </p>
-                        <div className="text-center font-black text-xl tracking-widest text-plum bg-white dark:bg-gray-900 py-1.5 rounded-xl border border-amber-300">
+                        <div className="text-center font-black text-xl tracking-widest text-plum bg-white py-1.5 rounded-xl border border-amber-300">
                           {loginGeneratedOtp}
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                        <label className="block text-gray-700 font-bold mb-1">
                           Enter 4-Digit SMS Code
                         </label>
                         <input 
@@ -545,7 +546,7 @@ export default function UserProfileModal({
                           value={loginEnteredOtp}
                           onChange={e => setLoginEnteredOtp(e.target.value)}
                           placeholder="4-Digit Code"
-                          className="w-full text-center tracking-widest text-lg font-black px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum"
+                          className="w-full text-center tracking-widest text-lg font-black px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum"
                           required
                         />
                       </div>
@@ -570,12 +571,12 @@ export default function UserProfileModal({
                 </div>
               )}
 
-              <div className="border-t border-gray-150 dark:border-gray-800 pt-3 text-center">
+              <div className="border-t border-gray-150 pt-3 text-center">
                 <p className="text-gray-500 text-xs">
                   Don't have an account?{' '}
                   <button 
                     onClick={() => setActiveTab('create_account')}
-                    className="text-plum dark:text-pink-400 font-extrabold underline cursor-pointer hover:text-plum-dark"
+                    className="text-plum font-extrabold underline cursor-pointer hover:text-plum-dark"
                   >
                     Create Account
                   </button>
@@ -593,8 +594,8 @@ export default function UserProfileModal({
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-gray-900 dark:text-white text-xs">New Member Loyalty Offer</h4>
-                    <p className="text-[11px] text-gray-600 dark:text-gray-300">
+                    <h4 className="font-extrabold text-gray-900 text-xs">New Member Loyalty Offer</h4>
+                    <p className="text-[11px] text-gray-600">
                       Create a password-protected account & verify your phone to claim <strong>150 Free Welcome Points (KSh 150)</strong>.
                     </p>
                   </div>
@@ -605,7 +606,7 @@ export default function UserProfileModal({
                 <form onSubmit={handleSendRegistrationOtp} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      <label className="block text-gray-700 font-bold mb-1">
                         Full Name *
                       </label>
                       <input 
@@ -613,13 +614,13 @@ export default function UserProfileModal({
                         value={regName}
                         onChange={e => setRegName(e.target.value)}
                         placeholder="e.g. Jane Wambui"
-                        className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      <label className="block text-gray-700 font-bold mb-1">
                         M-PESA Phone Number *
                       </label>
                       <div className="relative">
@@ -629,7 +630,7 @@ export default function UserProfileModal({
                           value={regPhone}
                           onChange={e => setRegPhone(e.target.value)}
                           placeholder="0712345678"
-                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                           required
                         />
                       </div>
@@ -638,7 +639,7 @@ export default function UserProfileModal({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      <label className="block text-gray-700 font-bold mb-1">
                         Email Address (Optional)
                       </label>
                       <input 
@@ -646,18 +647,18 @@ export default function UserProfileModal({
                         value={regEmail}
                         onChange={e => setRegEmail(e.target.value)}
                         placeholder="jane@example.com"
-                        className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      <label className="block text-gray-700 font-bold mb-1">
                         County (Kenya 47 Counties)
                       </label>
                       <select
                         value={regCounty}
                         onChange={e => setRegCounty(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-bold"
+                        className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-bold"
                       >
                         {KENYA_COUNTIES.map(c => (
                           <option key={c.code} value={c.name}>{c.name} ({c.code})</option>
@@ -667,7 +668,7 @@ export default function UserProfileModal({
                   </div>
 
                   <div>
-                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                    <label className="block text-gray-700 font-bold mb-1">
                       Estate / Street Address
                     </label>
                     <input 
@@ -675,14 +676,14 @@ export default function UserProfileModal({
                       value={regAddress}
                       onChange={e => setRegAddress(e.target.value)}
                       placeholder="e.g. Westlands, Mpaka Road Apt 4B"
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
                       <div className="flex justify-between items-center mb-1">
-                        <label className="block text-gray-700 dark:text-gray-300 font-bold">
+                        <label className="block text-gray-700 font-bold">
                           Account Password *
                         </label>
                         {regPassword && (
@@ -690,8 +691,8 @@ export default function UserProfileModal({
                             regPassword.length >= 10 && /[A-Z]/.test(regPassword) && /[0-9]/.test(regPassword)
                               ? 'bg-green/10 text-green border border-green/30'
                               : regPassword.length >= 8
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-300'
-                              : 'bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 border border-red-300'
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                              : 'bg-red-100 text-red-700 border border-red-300'
                           }`}>
                             {regPassword.length >= 10 && /[A-Z]/.test(regPassword) && /[0-9]/.test(regPassword)
                               ? 'Strong'
@@ -708,7 +709,7 @@ export default function UserProfileModal({
                           value={regPassword}
                           onChange={e => setRegPassword(e.target.value)}
                           placeholder="Min 8 characters"
-                          className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold text-xs"
+                          className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold text-xs"
                           required
                           minLength={8}
                         />
@@ -724,7 +725,7 @@ export default function UserProfileModal({
                     </div>
 
                     <div>
-                      <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1">
+                      <label className="block text-gray-700 font-bold mb-1">
                         Confirm Password *
                       </label>
                       <div className="relative">
@@ -734,7 +735,7 @@ export default function UserProfileModal({
                           value={regConfirmPassword}
                           onChange={e => setRegConfirmPassword(e.target.value)}
                           placeholder="Re-type password"
-                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold text-xs"
+                          className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold text-xs"
                           required
                           minLength={8}
                         />
@@ -753,7 +754,7 @@ export default function UserProfileModal({
                       onChange={e => setOptInLoyalty(e.target.checked)}
                       className="w-4 h-4 accent-plum cursor-pointer rounded"
                     />
-                    <label htmlFor="optInLoyalty" className="text-xs font-bold text-gray-800 dark:text-gray-200 cursor-pointer select-none">
+                    <label htmlFor="optInLoyalty" className="text-xs font-bold text-gray-800 cursor-pointer select-none">
                       Opt-in to K-Matt Smart Loyalty Program (+150 Bonus Points)
                     </label>
                   </div>
@@ -769,28 +770,28 @@ export default function UserProfileModal({
               ) : (
                 <form onSubmit={handleVerifyRegistrationOtp} className="space-y-4 max-w-md mx-auto py-2">
                   <div className="text-center space-y-1">
-                    <h4 className="font-black text-gray-900 dark:text-white text-base">Verify Your Phone Number</h4>
+                    <h4 className="font-black text-gray-900 text-base">Verify Your Phone Number</h4>
                     <p className="text-gray-500 text-xs">
                       Enter the 4-digit verification code dispatched to <strong>+254 {regPhone}</strong>
                     </p>
                   </div>
 
                   {/* SMS Simulation Callout Box */}
-                  <div className="bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 rounded-2xl p-4 text-xs space-y-2 text-center animate-pulse shadow-sm">
-                    <div className="flex items-center justify-center gap-1.5 font-black text-amber-900 dark:text-amber-200">
+                  <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 text-xs space-y-2 text-center animate-pulse shadow-sm">
+                    <div className="flex items-center justify-center gap-1.5 font-black text-amber-900">
                       <MessageSquareCode className="w-4 h-4 text-amber-600" />
                       <span>💬 K-Matt SMS Dispatcher</span>
                     </div>
-                    <p className="text-gray-800 dark:text-gray-200 font-semibold">
+                    <p className="text-gray-800 font-semibold">
                       Your phone verification code for K-Matt Membership is:
                     </p>
-                    <div className="font-black text-2xl tracking-widest text-plum bg-white dark:bg-gray-900 py-2 rounded-xl border border-amber-300 shadow-inner">
+                    <div className="font-black text-2xl tracking-widest text-plum bg-white py-2 rounded-xl border border-amber-300 shadow-inner">
                       {generatedRegOtp}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-gray-700 dark:text-gray-300 font-bold mb-1 text-center">
+                    <label className="block text-gray-700 font-bold mb-1 text-center">
                       Enter 4-Digit Code
                     </label>
                     <input 
@@ -799,7 +800,7 @@ export default function UserProfileModal({
                       value={userEnteredRegOtp}
                       onChange={e => setUserEnteredRegOtp(e.target.value)}
                       placeholder="0000"
-                      className="w-full text-center tracking-widest text-2xl font-black px-3 py-2.5 rounded-2xl border-2 border-plum bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-plum/30"
+                      className="w-full text-center tracking-widest text-2xl font-black px-3 py-2.5 rounded-2xl border-2 border-plum bg-white text-gray-900 outline-none focus:ring-2 focus:ring-plum/30"
                       required
                     />
                   </div>
@@ -816,7 +817,7 @@ export default function UserProfileModal({
                     <button
                       type="button"
                       onClick={() => setRegOtpStep('details')}
-                      className="text-gray-500 hover:text-gray-800 dark:hover:text-white font-bold"
+                      className="text-gray-500 hover:text-gray-800 font-bold"
                     >
                       ← Edit Registration Details
                     </button>
@@ -827,7 +828,7 @@ export default function UserProfileModal({
                         setGeneratedRegOtp(newCode);
                         if (onShowToast) onShowToast(`💬 New OTP Code sent: ${newCode}`, 'info');
                       }}
-                      className="text-plum dark:text-pink-400 font-bold flex items-center gap-1 hover:underline"
+                      className="text-plum font-bold flex items-center gap-1 hover:underline"
                     >
                       <RefreshCw className="w-3 h-3" />
                       <span>Resend SMS Code</span>
@@ -836,12 +837,12 @@ export default function UserProfileModal({
                 </form>
               )}
 
-              <div className="border-t border-gray-150 dark:border-gray-800 pt-3 text-center">
+              <div className="border-t border-gray-150 pt-3 text-center">
                 <p className="text-gray-500 text-xs">
                   Already have an account?{' '}
                   <button 
                     onClick={() => setActiveTab('sign_in')}
-                    className="text-plum dark:text-pink-400 font-extrabold underline cursor-pointer hover:text-plum-dark"
+                    className="text-plum font-extrabold underline cursor-pointer hover:text-plum-dark"
                   >
                     Sign In Here
                   </button>
@@ -877,7 +878,7 @@ export default function UserProfileModal({
               {/* Profile Form */}
               <form onSubmit={handleSaveProfile} className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-black text-gray-800 dark:text-gray-200 uppercase tracking-wider text-xs">Account Information</h4>
+                  <h4 className="font-black text-gray-800 uppercase tracking-wider text-xs">Account Information</h4>
                   {customer.isVerified && (
                     <span className="text-[10px] bg-green/10 text-green font-extrabold px-2 py-0.5 rounded-full border border-green/30 flex items-center gap-1">
                       <ShieldCheck className="w-3 h-3 text-green" />
@@ -892,7 +893,7 @@ export default function UserProfileModal({
                     type="text" 
                     value={name} 
                     onChange={e => setName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                    className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                     required
                   />
                 </div>
@@ -904,7 +905,7 @@ export default function UserProfileModal({
                       type="text" 
                       value={phone} 
                       onChange={e => setPhone(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                       required
                     />
                   </div>
@@ -914,7 +915,7 @@ export default function UserProfileModal({
                       type="email" 
                       value={email} 
                       onChange={e => setEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                     />
                   </div>
                 </div>
@@ -925,7 +926,7 @@ export default function UserProfileModal({
                     <select
                       value={county}
                       onChange={e => setCounty(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-bold outline-none focus:border-plum"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 font-bold outline-none focus:border-plum"
                     >
                       {KENYA_COUNTIES.map(c => (
                         <option key={c.code} value={c.name}>
@@ -940,7 +941,7 @@ export default function UserProfileModal({
                       type="text" 
                       value={address} 
                       onChange={e => setAddress(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      className="w-full px-3 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                     />
                   </div>
                 </div>
@@ -960,21 +961,21 @@ export default function UserProfileModal({
                             <Building2 className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <span className="text-[10px] font-black uppercase text-plum dark:text-pink-400 tracking-wider">
+                            <span className="text-[10px] font-black uppercase text-plum tracking-wider">
                               Matched Nearest K-Matt Supermarket
                             </span>
-                            <h4 className="font-black text-gray-900 dark:text-white text-sm">
+                            <h4 className="font-black text-gray-900 text-sm">
                               {matchedB.name}
                             </h4>
                           </div>
                         </div>
-                        <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-extrabold text-xs px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-xs">
+                        <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs px-2.5 py-1 rounded-xl flex items-center gap-1 shadow-xs">
                           <MapPin className="w-3.5 h-3.5 text-emerald-600" />
                           <span>~{matchedKm} km away</span>
                         </span>
                       </div>
 
-                      <p className="text-gray-600 dark:text-gray-300 text-xs font-medium">
+                      <p className="text-gray-600 text-xs font-medium">
                         Storefront stock and products automatically update based on your address (<strong>{county}</strong>). Nearest branch: <strong>{matchedB.town} ({matchedB.address})</strong>.
                       </p>
 
@@ -997,11 +998,11 @@ export default function UserProfileModal({
                                 className={`p-2 rounded-xl border text-left cursor-pointer transition-all ${
                                   isSelected 
                                     ? 'bg-plum text-white border-plum font-extrabold shadow-sm'
-                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-plum/50'
+                                    : 'bg-white border-gray-200 text-gray-800 hover:border-plum/50'
                                 }`}
                               >
                                 <div className="font-bold truncate">{b.town}</div>
-                                <div className={`text-[10px] ${isSelected ? 'text-pink-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                                <div className={`text-[10px] ${isSelected ? 'text-pink-100' : 'text-gray-500'}`}>
                                   ~{dist} km {isSelected ? '✓ Active' : ''}
                                 </div>
                               </button>
@@ -1022,7 +1023,7 @@ export default function UserProfileModal({
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                       placeholder="Min 8 characters (leave blank to keep current)"
-                      className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white outline-none focus:border-plum font-semibold"
+                      className="w-full pl-9 pr-10 py-2 rounded-xl border border-gray-250 bg-white text-gray-900 outline-none focus:border-plum font-semibold"
                       minLength={8}
                     />
                     <button 
@@ -1050,7 +1051,7 @@ export default function UserProfileModal({
                         onLogoutCustomer();
                         onClose();
                       }}
-                      className="px-4 py-2.5 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                      className="px-4 py-2.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-xl font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       <span>Sign Out</span>
@@ -1101,8 +1102,33 @@ export default function UserProfileModal({
                 )}
               </div>
 
+              {/* Quick Link to 6-Month Loyalty Visualization Chart */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-plum-fade/70 border border-plum/25 rounded-2xl p-4 shadow-2xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-plum text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h5 className="font-black text-xs text-gray-900">
+                      Want to see your 6-month points trajectory?
+                    </h5>
+                    <p className="text-[10px] text-gray-600 font-medium">
+                      Explore interactive Recharts analytics showing how your supermarket shopping habits earn rewards.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('points_history')}
+                  className="bg-plum hover:bg-plum-dark text-white text-xs font-black px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs hover:shadow-md"
+                >
+                  <span>View 6-Mo Chart</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               <div className="space-y-3">
-                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
+                <h4 className="font-black text-gray-900 uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-plum" />
                   <span>K-Matt Member Tiers & Benefits</span>
                 </h4>
@@ -1117,8 +1143,8 @@ export default function UserProfileModal({
                         key={tier.id}
                         className={`p-4 rounded-2xl border transition-all ${
                           isUnlocked 
-                            ? 'bg-white dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 shadow-xs' 
-                            : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 opacity-70'
+                            ? 'bg-white border-gray-200 shadow-xs' 
+                            : 'bg-gray-50 border-gray-200 opacity-70'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1126,9 +1152,9 @@ export default function UserProfileModal({
                             <span className="text-xl">{tier.icon}</span>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h5 className="font-extrabold text-gray-900 dark:text-white text-xs">{tier.name}</h5>
+                                <h5 className="font-extrabold text-gray-900 text-xs">{tier.name}</h5>
                                 {isCurrent && (
-                                  <span className="bg-plum/10 text-plum dark:bg-pink-900/40 dark:text-pink-300 text-[9px] font-extrabold px-2 py-0.2 rounded-full">
+                                  <span className="bg-plum/10 text-plum text-[9px] font-extrabold px-2 py-0.2 rounded-full">
                                     Active Rank
                                   </span>
                                 )}
@@ -1143,16 +1169,16 @@ export default function UserProfileModal({
                               <span>Unlocked</span>
                             </span>
                           ) : (
-                            <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1">
+                            <span className="bg-gray-200 text-gray-600 font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1">
                               <Lock className="w-3 h-3" />
                               <span>Locked</span>
                             </span>
                           )}
                         </div>
 
-                        <div className="mt-2.5 pt-2.5 border-t border-gray-150 dark:border-gray-700/60 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-[11px]">
-                          <p className="font-bold text-plum dark:text-pink-400 flex items-center gap-1">
-                            <Sparkles className="w-3.5 h-3.5 text-plum dark:text-pink-400" />
+                        <div className="mt-2.5 pt-2.5 border-t border-gray-150 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-[11px]">
+                          <p className="font-bold text-plum flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-plum" />
                             <span>{tier.discountDesc}</span>
                           </p>
                           <ul className="text-[10px] text-gray-500 space-y-0.5">
@@ -1175,10 +1201,10 @@ export default function UserProfileModal({
           {/* TAB: POINTS HISTORY */}
           {customer && activeTab === 'points_history' && (
             <div className="space-y-4">
-              <div className="bg-plum/10 dark:bg-pink-950/30 border border-plum/20 rounded-2xl p-4 flex justify-between items-center">
+              <div className="bg-plum/10 border border-plum/20 rounded-2xl p-4 flex justify-between items-center">
                 <div>
-                  <span className="text-[10px] font-bold text-plum dark:text-pink-300 uppercase tracking-wider">Current Points Balance</span>
-                  <h3 className="text-2xl font-black text-gray-900 dark:text-white">{points} PTS</h3>
+                  <span className="text-[10px] font-bold text-plum uppercase tracking-wider">Current Points Balance</span>
+                  <h3 className="text-2xl font-black text-gray-900">{points} PTS</h3>
                   <p className="text-[10px] text-gray-500 font-medium">1 Point = KSh 1 discount at checkout</p>
                 </div>
                 <div className="text-right">
@@ -1188,22 +1214,31 @@ export default function UserProfileModal({
                 </div>
               </div>
 
+              {/* 6-Month Loyalty Points Recharts Visualization Component */}
+              <LoyaltyPointsChart 
+                customer={customer}
+                orders={activeOrders}
+                currentTierName={currentTier.name}
+                nextTierName={nextTier?.name}
+                pointsToNextTier={pointsNeeded}
+              />
+
               <div className="space-y-2">
-                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs">Points Activity</h4>
+                <h4 className="font-black text-gray-900 uppercase tracking-wider text-xs">Points Activity</h4>
 
                 {previousFiveOrders.length > 0 ? (
                   <div className="space-y-2">
                     {previousFiveOrders.map(order => (
                       <div 
                         key={order.id}
-                        className="bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs"
+                        className="bg-white p-3 rounded-2xl border border-gray-200 flex justify-between items-center text-xs"
                       >
                         <div className="flex items-center gap-2.5">
                           <div className="p-2 bg-green/10 rounded-xl text-green">
                             <TrendingUp className="w-4 h-4" />
                           </div>
                           <div>
-                            <span className="font-extrabold text-gray-900 dark:text-white block">Order #{order.id.slice(-6).toUpperCase()}</span>
+                            <span className="font-extrabold text-gray-900 block">Order #{order.id.slice(-6).toUpperCase()}</span>
                             <span className="text-[10px] text-gray-500 font-medium">{order.date ? new Date(order.date).toLocaleDateString('en-GB') : 'Recent'} • Earned 1 pt / KSh 100</span>
                           </div>
                         </div>
@@ -1217,7 +1252,7 @@ export default function UserProfileModal({
                     ))}
                   </div>
                 ) : (
-                  <div className="p-6 text-center text-gray-500 font-medium border border-dashed border-gray-250 dark:border-gray-700 rounded-2xl">
+                  <div className="p-6 text-center text-gray-500 font-medium border border-dashed border-gray-250 rounded-2xl">
                     <p>No recent orders found. Earn points automatically on every checkout!</p>
                   </div>
                 )}
@@ -1229,7 +1264,7 @@ export default function UserProfileModal({
           {customer && activeTab === 'orders' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
+                <h4 className="font-black text-gray-900 uppercase tracking-wider text-xs flex items-center gap-1.5">
                   <Printer className="w-4 h-4 text-plum" />
                   <span>Your Previous Receipts ({previousFiveOrders.length})</span>
                 </h4>
@@ -1240,12 +1275,12 @@ export default function UserProfileModal({
                   {previousFiveOrders.map(order => (
                     <div 
                       key={order.id}
-                      className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-3 hover:border-plum transition-all"
+                      className="bg-white p-4 rounded-2xl border border-gray-200 space-y-3 hover:border-plum transition-all"
                     >
-                      <div className="flex justify-between items-start border-b border-gray-150 dark:border-gray-700 pb-2.5">
+                      <div className="flex justify-between items-start border-b border-gray-150 pb-2.5">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-black text-sm text-gray-900 dark:text-white">Order #{order.id.slice(-6).toUpperCase()}</span>
+                            <span className="font-black text-sm text-gray-900">Order #{order.id.slice(-6).toUpperCase()}</span>
                             <span className="bg-green/10 text-green font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green/30">
                               {order.status}
                             </span>
@@ -1256,13 +1291,13 @@ export default function UserProfileModal({
                           </span>
                         </div>
                         <div className="text-right">
-                          <span className="font-black text-plum dark:text-pink-400 text-sm">{formatMoney(order.total)}</span>
+                          <span className="font-black text-plum text-sm">{formatMoney(order.total)}</span>
                           <span className="text-[10px] text-gray-500 block font-bold">{order.items.reduce((s, i) => s + i.qty, 0)} Items</span>
                         </div>
                       </div>
 
                       {/* Items Summary */}
-                      <div className="text-[11px] text-gray-600 dark:text-gray-300 space-y-1">
+                      <div className="text-[11px] text-gray-600 space-y-1">
                         {order.items.slice(0, 3).map((item, idx) => (
                           <div key={idx} className="flex justify-between font-medium">
                             <span className="truncate max-w-[200px] sm:max-w-[300px]">{item.qty}x {item.name}</span>
@@ -1279,7 +1314,7 @@ export default function UserProfileModal({
                         {onViewReceipt && (
                           <button
                             onClick={() => onViewReceipt(order)}
-                            className="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-extrabold text-xs py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             <span>View / Print Receipt</span>
@@ -1300,9 +1335,9 @@ export default function UserProfileModal({
                   ))}
                 </div>
               ) : (
-                <div className="p-8 text-center text-gray-500 font-medium border border-dashed border-gray-250 dark:border-gray-700 rounded-2xl space-y-2">
+                <div className="p-8 text-center text-gray-500 font-medium border border-dashed border-gray-250 rounded-2xl space-y-2">
                   <Printer className="w-8 h-8 mx-auto text-gray-300" />
-                  <p className="font-bold text-gray-700 dark:text-gray-300">No previous order receipts yet.</p>
+                  <p className="font-bold text-gray-700">No previous order receipts yet.</p>
                   <p className="text-[11px]">When you place orders on K-Matt Supermarket, your receipts will be safely archived here for instant reordering and printing!</p>
                 </div>
               )}

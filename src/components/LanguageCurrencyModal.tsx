@@ -69,11 +69,11 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-gray-950/70 backdrop-blur-md animate-fade-in">
       <div 
-        className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-2xl shadow-2xl border border-plum/15 dark:border-gray-800 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up"
+        className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-plum/15 overflow-hidden flex flex-col max-h-[90vh] animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="bg-plum dark:bg-gray-950 text-white p-4 sm:p-5 flex items-center justify-between border-b border-white/10 relative">
+        <div className="bg-plum text-white p-4 sm:p-5 flex items-center justify-between border-b border-white/10 relative">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 text-white shadow-inner">
               <Globe className="w-5 h-5" />
@@ -106,11 +106,11 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
           {/* Section 1: Choose Language */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-black uppercase tracking-wider text-plum dark:text-pink-400 flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-plum dark:text-pink-400" />
+              <label className="text-xs font-black uppercase tracking-wider text-plum flex items-center gap-1.5">
+                <Globe className="w-4 h-4 text-plum" />
                 <span>Select Language</span>
               </label>
-              <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+              <span className="text-[11px] font-bold text-gray-500">
                 8 Languages Available
               </span>
             </div>
@@ -124,8 +124,8 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
                     onClick={() => handleSelectLang(lang.code)}
                     className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-plum/10 dark:bg-pink-950/40 border-plum dark:border-pink-500 text-plum dark:text-pink-300 shadow-sm ring-1 ring-plum/20'
-                        : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-750 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-plum/10 border-plum text-plum shadow-sm ring-1 ring-plum/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -134,13 +134,13 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
                         <p className="font-extrabold text-xs sm:text-sm leading-tight truncate">
                           {lang.native}
                         </p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        <p className="text-[10px] text-gray-500 truncate">
                           {lang.label}
                         </p>
                       </div>
                     </div>
                     {isSelected && (
-                      <div className="w-5 h-5 rounded-full bg-plum dark:bg-pink-500 text-white flex items-center justify-center shrink-0 ml-1">
+                      <div className="w-5 h-5 rounded-full bg-plum text-white flex items-center justify-center shrink-0 ml-1">
                         <Check className="w-3 h-3 stroke-[3]" />
                       </div>
                     )}
@@ -153,11 +153,11 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
           {/* Section 2: Choose Currency */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-black uppercase tracking-wider text-plum dark:text-pink-400 flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-plum dark:text-pink-400" />
+              <label className="text-xs font-black uppercase tracking-wider text-plum flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4 text-plum" />
                 <span>Select Currency & Cost</span>
               </label>
-              <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+              <span className="text-[11px] font-bold text-gray-500">
                 Live Conversion Rate
               </span>
             </div>
@@ -171,8 +171,8 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
                     onClick={() => handleSelectCurrency(curr.code)}
                     className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-plum/10 dark:bg-pink-950/40 border-plum dark:border-pink-500 text-plum dark:text-pink-300 shadow-sm ring-1 ring-plum/20'
-                        : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-750 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        ? 'bg-plum/10 border-plum text-plum shadow-sm ring-1 ring-plum/20'
+                        : 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -180,9 +180,9 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
                       <div className="min-w-0">
                         <p className="font-black text-xs sm:text-sm leading-tight truncate flex items-center gap-1">
                           <span>{curr.code}</span>
-                          <span className="text-plum dark:text-pink-300 font-extrabold">({curr.symbol})</span>
+                          <span className="text-plum font-extrabold">({curr.symbol})</span>
                         </p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                        <p className="text-[10px] text-gray-500 truncate">
                           {curr.name}
                         </p>
                       </div>
@@ -190,11 +190,11 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
 
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
                       {isSelected ? (
-                        <div className="w-5 h-5 rounded-full bg-plum dark:bg-pink-500 text-white flex items-center justify-center font-black">
+                        <div className="w-5 h-5 rounded-full bg-plum text-white flex items-center justify-center font-black">
                           <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       ) : (
-                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] font-bold text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded">
                           {curr.symbol}
                         </span>
                       )}
@@ -206,14 +206,14 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
           </div>
 
           {/* Sync & Helper Callout */}
-          <div className="p-3 bg-plum/5 dark:bg-gray-800 rounded-xl border border-plum/10 dark:border-gray-700 flex items-center justify-between">
+          <div className="p-3 bg-plum/5 rounded-xl border border-plum/10 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-plum dark:text-white shrink-0" />
+              <Sparkles className="w-4 h-4 text-plum shrink-0" />
               <div>
-                <p className="text-xs font-bold text-gray-900 dark:text-white">
+                <p className="text-xs font-bold text-gray-900">
                   Match Currency & Language Automatically
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] text-gray-500">
                   Selecting USD automatically sets English, EUR sets French/German/Spanish, etc.
                 </p>
               </div>
@@ -222,7 +222,7 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
               type="button"
               onClick={() => setAutoSync(!autoSync)}
               className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer shrink-0 ${
-                autoSync ? 'bg-plum dark:bg-pink-500' : 'bg-gray-300 dark:bg-gray-600'
+                autoSync ? 'bg-plum' : 'bg-gray-300'
               }`}
             >
               <div
@@ -236,14 +236,14 @@ export const LanguageCurrencyModal: React.FC<LanguageCurrencyModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <div className="text-xs text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1">
+        <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+          <div className="text-xs text-gray-500 font-medium flex items-center gap-1">
             <span>Active:</span>
-            <strong className="text-plum dark:text-pink-400 font-extrabold">
+            <strong className="text-plum font-extrabold">
               {LANGUAGES.find(l => l.code === selectedLang)?.flag} {selectedLang.toUpperCase()}
             </strong>
             <span>•</span>
-            <strong className="text-plum dark:text-white font-extrabold">
+            <strong className="text-plum font-extrabold">
               {CURRENCIES[selectedCurrency]?.code} ({CURRENCIES[selectedCurrency]?.symbol})
             </strong>
           </div>
